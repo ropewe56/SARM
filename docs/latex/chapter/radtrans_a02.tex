@@ -1,0 +1,138 @@
+\section{Line Shapes}
+
+\subsection{Gaussian Lineshape}
+
+\begin{align}
+	\dfrac{\Delta \lambda}{\lambda} = \dfrac{v}{c} = \dfrac{1}{c} \sqrt{\dfrac{2 k_B T}{m}}
+\end{align}
+
+\begin{align}
+	\exp(-a x_h^2) &= \dfrac{1}{2} \\
+	-a x_h^2 &= \ln{\dfrac{1}{2}} \\
+	a &= \dfrac{\ln{2}}{x_h^2}
+\end{align}
+
+\begin{align}
+	x_h = x_{hwhm} = \Delta \lambda
+\end{align}
+
+\begin{align}
+	a &= \dfrac{\ln{2}}{\Delta \lambda^2}
+\end{align}
+
+\begin{align}
+	\int \exp\left(- \dfrac{\ln{2}}{\Delta \lambda^2} x^2\right) dx = \sqrt{\dfrac{\pi}{a}}
+\end{align}
+
+\begin{align}
+	\sqrt{\dfrac{a}{\pi}} \int \exp\left(- \dfrac{\ln{2}}{\Delta \lambda^2} x^2\right) dx = 1
+\end{align}
+
+\begin{align}
+	\sqrt{\dfrac{\dfrac{\ln{2}}{\Delta \lambda^2}}{\pi}} \int \exp\left(- \dfrac{\ln{2}}{\Delta \lambda^2} x^2\right) dx = 1
+\end{align}
+
+\begin{align}
+	&\Delta \lambda = \dfrac{1}{c} \sqrt{\dfrac{2 k_B T}{m}} \lambda \\
+	&\sqrt{\dfrac{\ln{2}}{\pi \Delta \lambda^2}} \int \exp\left(- \dfrac{\ln{2}}{\Delta \lambda^2} (\lambda - \lambda_0)^2\right) dx = 1
+\end{align}
+
+\subsection{Lorentz Lineshape}
+
+\begin{align}
+	L(\nu) = \dfrac{a^2}{ (\nu - \nu_0)^2 + a^2}
+\end{align}
+
+\begin{align}
+	L(\nu_0) = 1
+\end{align}
+
+\begin{align}
+	L(\nu_h) = 1/2  = \dfrac{a^2}{ (\nu_h - \nu_0)^2 + a^2}
+\end{align}
+
+\begin{align}
+	 (\nu_h - \nu_0)^2 + a^2 = 2 a^2
+\end{align}
+
+\begin{align}
+	(\nu_h - \nu_0) = \Delta \nu = a
+\end{align}
+
+\begin{align}
+	L(\nu) = \dfrac{\Delta \nu^2}{ (\nu - \nu_0)^2 + \Delta \nu^2}
+\end{align}
+
+\begin{align}
+	L(\lambda) = \dfrac{b^2}{ c^2(1/\lambda - 1/\lambda_0)^2 + b^2}
+\end{align}
+
+\begin{align}
+	L(\lambda) = \dfrac{b^2}{ c^2 \left(\dfrac{\lambda - \lambda_0}{\lambda  \lambda_0}\right)^2 + b^2}
+\end{align}
+
+\begin{align}
+	L(\lambda) = \dfrac{b^2 \lambda^2 \lambda_0^2}{c^2}
+				\dfrac{1}{\left(\lambda - \lambda_0\right)^2 + \lambda^2 \lambda_0^2 b^2/c^2}
+\end{align}
+
+\begin{align}
+	L(\lambda_0) = 1
+\end{align}
+
+\begin{align}
+	L(\lambda_h) = \dfrac{1}{2} = \dfrac{b^2 \lambda_h^2 \lambda_0^2}{c^2}
+\dfrac{1}{\left(\lambda_h - \lambda_0\right)^2 + \lambda_h^2 \lambda_0^2 b^2/c^2}
+\end{align}
+
+\begin{align}
+	 2 \dfrac{b^2 \lambda_h^2 \lambda_0^2}{c^2}
+				= \left(\lambda_h - \lambda_0\right)^2 + \lambda_h^2 \lambda_0^2 b^2/c^2
+\end{align}
+
+\begin{align}
+	\dfrac{b^2 \lambda_h^2 \lambda_0^2}{c^2}
+		= \left(\lambda_h - \lambda_0\right)^2
+\end{align}
+
+\begin{align}
+	\dfrac{b^2}{c^2} = \left(\lambda_h - \lambda_0\right)^2 \dfrac{1}{\lambda_h^2 \lambda_0^2}
+\end{align}
+
+\begin{align}
+	L = \left(\lambda_h - \lambda_0\right)^2 \dfrac{1}{\left(\lambda - \lambda_0\right)^2 + \left(\lambda_h - \lambda_0\right)^2}
+\end{align}
+
+\begin{align}
+	\Delta \lambda_{hwhm} = \lambda - \lambda_0
+\end{align}
+
+\begin{align}
+	L =   \dfrac{ \Delta \lambda^2}{\left(\lambda - \lambda_0\right)^2 + \Delta \lambda^2}
+\end{align}
+
+\begin{align}
+   \int_{-\infty}^{-\infty} \dfrac{1}{1 + x^2} dx = \arctan(\infty) - \arctan(-\infty) = \pi
+\end{align}
+
+
+\begin{align}
+	x &= \dfrac{\left(\lambda - \lambda_0\right)}{ \Delta \lambda} \\
+	dx &= \dfrac{1}{\Delta \lambda} d\lambda
+\end{align}
+
+\begin{align}
+	L =   \dfrac{\dfrac{1}{\pi} \Delta \lambda}{\left(\lambda - \lambda_0\right)^2 + \Delta \lambda^2}
+\end{align}
+
+\begin{align}
+	L =  \dfrac{1}{\pi} \dfrac{\Delta \lambda}{\left(\lambda - \lambda_0\right)^2 + \Delta \lambda^2}
+\end{align}
+
+\begin{align}
+	\int \dfrac{1}{\pi} \dfrac{\Delta \lambda}{\left(\lambda - \lambda_0\right)^2 + \Delta \lambda^2} d\lambda = 1
+\end{align}
+
+\begin{align}
+	\int \dfrac{1}{\pi} \dfrac{\Delta \lambda}{\left(\lambda - \lambda_0\right)^2 + \Delta \lambda^2} d\lambda = 1
+\end{align}

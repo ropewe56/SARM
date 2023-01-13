@@ -1,0 +1,67 @@
+
+\section{Integration of the Radiation Transfer Equation}
+\label{app_a_1}
+
+The radiation transfer equation \eqn{eqn1} is of the form:
+\begin{align}
+	\label{eqn_a_rte}
+	\dfrac{dy}{dx} = - a y + b
+\end{align}
+If $a$ and $b$ are constant the solution can be written as:
+\begin{align}
+	y(x) = c(x) \exp( - a x)
+\end{align}
+Inserting into \eqn{eqn_a_rte} yields:
+\begin{align}
+		\dfrac{d y}{d x} = \dfrac{d c(x)}{dx} \exp( - a x) - a c(x) \exp( - a x) = - a c(x) \exp( - a x) + b
+\end{align}
+and further:
+\begin{align}
+	\dfrac{d c(x)}{dx}  = b \exp(a x)
+\end{align}
+This can be integrated:
+\begin{align}
+	d c(x) = b \exp(a x) dx
+\end{align}
+\begin{align}
+	\int_{c_0}^c d c(x)  =  b \int_0^x \exp(a x) dx
+\end{align}
+\begin{align}
+	c - c_0  = \dfrac{b}{a} \left(\exp(a x) - 1\right)
+\end{align}
+And finally:
+\begin{align}
+	y(x) = y(0) \exp( - a x) + \dfrac{b}{a} \left(1 - \exp( - a x)\right)
+\end{align}
+
+\section{Cubic Polynomial Interpolation}
+\label{app_a_2}
+\begin{align}
+	y(x) = a_0 + a_1 x + a_2 x^2 +  a_3 x^3
+\end{align}
+
+With $a_0 = y(0)$ and $\dfrac{d y(0)}{d x} = 0$ it follows that $a_1 = 0$.
+The coefficients $a_2$ and $a_3$ are determined by the linear system: 
+\begin{align}
+	y(x_1) &= y(0) + a_2 x_1^2 +  a_3 x_1^3 \\
+	y(x_2) &= y(0) + a_2 x_2^2 +  a_3 x_2^3
+\end{align}
+which can be written as matrix equation:
+\begin{align}x
+	\begin{pmatrix} x_1^2 & x_1^3 \\
+					x_2^2 & x_2^3 
+	\end{pmatrix}
+	\begin{pmatrix}	a_2 \\ a_3
+	\end{pmatrix}
+	=
+	\begin{pmatrix} y(x_1) - y(0) \\ y(x_2) - y(0)
+	\end{pmatrix}
+\end{align}
+Using Cramer's rule the solution is given by:
+\begin{align}
+ a_2 &= \dfrac{(y(x_1) - y(0)) x_2^3 - (y(x_2) - y(0)) x_1^3}{x_1^2 x_2^3 - x_1^3 x_2^2} \\
+ a_3 &= \dfrac{(y(x_2) - y(0)) x_1^2 - (y(x_1) - y(0)) x_2^2}{x_1^2 x_2^3 - x_1^3 x_2^2}
+\end{align}
+
+
+

@@ -1,0 +1,119 @@
+\section{Introduction}
+
+This simple radiative transfer model through the atmosphere including only $CO_2$ as interacting agent is by no means a model of radiative transfer in the atmosphere with ist large number of climat active gases including clouds, aerosols etc. The current model is just meant to give some basic insights into the absorption and emission processes of infrared radiation on it's way from the earth surface to the top of the atmosphere (TAO) and only interacting with $CO_2$ in th wavelength region aroung $15\; \mu m$. Temperature and pressure of the atmosphere is fixed
+
+\section{Model Description}
+
+The key assumptions of the simple atmosphere model are:
+\begin{itemize}
+	\item The only species interating with infrared radiation in the $15 \mu m$ range is $CO_2$
+	\item The temperature and pressure profiles of the atmosphere are prescribed, thus there is no self consistency between absorption and temperature
+	\item Only upward traveling radiation is considered
+	\item The main result is the difference of infrared radiation at the top of the atmosphere (TOA) at $70 km$ escaping to free space with different $CO_2$ concentrations
+	\item Scattering will be neglected
+	\item The atmospheric gas is in local thermodynamic equilibrium so that all energy levels are occupied according to 
+	the Boltzmann factor
+	\item All spectroscopic data of $CO_2$ are taken from the HITRAN data base. 
+\end{itemize}
+
+
+\subsection{Radiation Transport Equation}
+
+The radiation transport equation reads:
+\begin{align}
+	\label{eqn1}
+	\dfrac{d I(\lambda)}{ds} = - \kappa(\lambda) I(\lambda) + \epsilon(\lambda)
+\end{align}
+with the spectral intensity:
+\begin{align*}
+	&I(\lambda)    : \left[\dfrac{W}{m^2 \; sr \; m}\right]
+\end{align*}
+the absorption coefficient:
+\begin{align*}
+	&\kappa(\lambda)   : \left[\dfrac{1}{m}\right]
+\end{align*}
+and the emission coefficient:
+\begin{align*}
+	&\epsilon(\lambda) : \left[\dfrac{W}{m^3 \; sr \; m}\right]
+\end{align*}
+The absorption and emission coefficients are given by the sums over all 
+line coefficients:
+\begin{align*}
+	\epsilon(\lambda) &= \sum_j \epsilon_j(\lambda) \\
+	\kappa(\lambda) &= \sum_j \kappa_j(\lambda)
+\end{align*}
+
+The emission coefficient $\epsilon_j(\lambda)$ due to spontaneous emission from the upper level $u$ to the lower level $l$ is given by:
+\begin{align}
+	\epsilon_j(\lambda) &= \dfrac{1}{4 \pi} \dfrac{h c}{\lambda} N_u A_{ul} f(\lambda)
+	 \dfrac{\lambda^2}{c}
+\end{align}
+$A_{ul}$ ist the Einstein coefficient of spontaneous emission from upper to lower energy state, $N_u$ the density of the upper state and $f(\lambda)$ is the line shape. The absorption coefficient $\kappa_j(\lambda)$ of this transition is given by:
+\begin{align}
+	\kappa_j(\lambda)  = \dfrac{h}{\lambda}  \left(  B_{lu} N_l -  B_{ul} N_u \right) f(\lambda)
+	 \dfrac{\lambda^2}{c}
+\end{align}
+with the Einstein coefficients of absorption and stimulated emission:
+\begin{align}
+	B_{ul} &= \dfrac{1}{8 \pi} \dfrac{\lambda^3}{h} A_{ul} \;\;\; , \;\;\; \left[\dfrac{m^3}{J s^2}\right] \\
+	B_{lu} &= \dfrac{g_u}{g_l} B_{ul}
+\end{align}
+The densities of the upper and lower states are given by the Boltzmann distribution at local temperature $T$:
+\begin{align}
+	N_u &= N \dfrac{g_u}{Q(T)} \exp\left(- \dfrac{E_u}{k_B T} \right) \\
+	N_l &= N \dfrac{g_l}{Q(T)} \exp\left(- \dfrac{E_l}{k_B T} \right)
+\end{align}
+$g_u$ and $g_l$ are the degeneracies of the upper and lower level respectively and Q(T) is the partition function.
+
+
+\subsection{Line Shapes}
+
+The main line broadening mechanisms in gases are natural line broadening, Doppler broadening and pressure broadening. Natural line broadening can be neglected. Pressure broadening is dominant in the denser parts of the atmosphere whereas Doppler broadening only becomes the dominant broadening mechanism in higher diluted regions of the atmosphere.
+
+\subsubsection{Doppler Broadening}
+
+Doppler broadened line shapes are given by a Gaussian function:
+\begin{align}
+	f_G(\lambda) &= \sqrt{\dfrac{\ln 2}{\pi \Delta \lambda^2}}  
+		\exp \left(- \dfrac{\ln 2}{\Delta \lambda^2}  \left(\lambda - \lambda_0\right)^2 \right) \\
+			\int_{-\infty}^{\infty}  f_G(\lambda) d\lambda &= 1
+\end{align}
+with the half width at half maximum (HWHM) line width:
+\begin{align}
+\dfrac{\Delta \lambda}{\lambda} = \dfrac{v}{c} = \dfrac{1}{c} \sqrt{\dfrac{2 k_B T}{m}}
+\end{align}
+Doppler broadening is  determined by the temperature and the mass of the particles.
+
+\subsubsection{Pressure Broadening}
+
+Pressure broadening is caused by the collisions between molecules, in the present model mainly between $N_2$ and $O_2$ with $CO_2$. 
+The main determining factors are the concentration of the collision partners and the collision frequency. The line shapes are given by a Lorentz function:
+\begin{align}
+	f_L(\lambda) &= \dfrac{1}{\pi} \dfrac{\Delta \lambda}{ (\lambda - \lambda_0)^2 + \Delta \lambda^2} \\
+	\int_{-\infty}^{\infty}  f_L(\lambda) d\lambda &= 1
+\end{align}
+
+Contrary to the Gaussian line shapes of Doppler broadening Lorentz functions have a much wider extend. In order to keep computation times low the Lorentz functions have to be cut at a point. To estimate the introduced error the normalized Lorentz function is integrated from $-x_p$ to $x_p$:
+\begin{align}
+	F(x_p) = \dfrac{1}{\pi} \int_{-x_p}^{x_p} \dfrac{1}{1 + x^2} dx = \dfrac{1}{\pi} \left(\arctan(x_p) - \arctan(-x_p)\right)
+\end{align}
+$F(x_p) = 0.9$ at $x_p \approx 6.3$, $0.97$ at $x_p = 20$ and $0.99$ at $x_p = 40$. In the absorption computations the limit is set at  $20 \Delta \lambda$ so that approximately 3\% of the radiation power is missing. To compensate for this a background of 3\% of a moving average will be added.
+
+\subsubsection{Voigt Profile}
+
+The line shape is a convolution of Lorentz and Gauss functions which is called Voigt profile. For the sake of performance the Voigh tprofile is approximate by a linear interpolation of Lorentz and Gauss shapes:
+\begin{align}
+	f(\lambda, \lambda_0) =
+	\begin{cases}
+		f_L(\lambda, \lambda_0) & v > 1\\
+		v f_L(\lambda, \lambda_0) + (1-v) f_G(\lambda, \lambda_0) & \text{otherwise}
+	\end{cases}
+\end{align}
+with:
+\begin{align*}
+	a &= \dfrac{\Delta \lambda_L}{\Delta \lambda_G \lambda_0} \\
+	v &= \operatorname{max}(0.0, 1.36606 \; a - 0.47719 \; a^2 + 0.11116 \;  a^3)
+\end{align*}
+
+
+

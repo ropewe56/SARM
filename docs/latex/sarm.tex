@@ -1,0 +1,165 @@
+% !TeX root = quantum_optics.tex
+
+\documentclass[a4paper,11pt,bibliography=totoc,fleqn,openany,oneside]{scrartcl}
+
+\usepackage{typearea}
+\usepackage{braket}
+
+%\usepackage{tocloft}
+%\renewcommand\cftpartnumwidth{2cm}
+%\KOMAoption{listof}{entryprefix}
+%\KOMAoption{listof}{chapterentry}
+
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\l@part}
+  {2em}  % <search>
+  {4cm}  % <replace>
+  {}{}   % <success><failure>
+\makeatother
+
+\RedeclareSectionCommand[tocnumwidth=4cm]{part}
+%\usepackage{tocstyle}
+%\usetocstyle{KOMAlike}
+
+\usepackage[onehalfspacing]{setspace}
+
+\usepackage[
+  paperwidth=210mm,
+  paperheight=297mm,
+  top=15mm,
+  bottom=25mm,
+  inner=20mm,
+  outer=20mm,
+  marginparsep=7mm,
+  marginparwidth=48mm,
+]{geometry}
+
+\usepackage[xetex]{hyperref}
+\usepackage[xetex]{graphicx}
+
+\usepackage{todonotes}
+
+\usepackage[utf8]{inputenc}
+\usepackage{bigints}
+\usepackage{paralist}
+\usepackage{listings}
+
+\usepackage[backend=biber,
+%style=apa,
+style=authoryear,
+date=year,
+citestyle=authoryear-comp,
+maxcitenames=1,
+sortcites=true,
+url=true]{biblatex}
+%\usepackage[style=numeric]{biblatex}
+\addbibresource{bib/Quantum_Optics.bib}
+
+\usepackage[toc,page]{appendix}
+
+\usepackage{mathtools}
+\usepackage{amsmath,amsfonts,amsxtra,mathrsfs}
+\usepackage{bm}
+\usepackage{verbatim}
+\usepackage{theorem}
+%\usepackage{lineno}
+%\linenumbers
+
+\setlength\mathindent{5mm}
+
+\setlength{\parindent}{0pt}
+
+\usepackage{subfig}
+
+\usepackage[section]{placeins}
+
+
+\usepackage{xcolor}
+\usepackage[framemethod=tikz, xcolor=dvipsnames]{mdframed}
+
+\newcommand{\bildh}[4]
+{
+    \begin{figure}[!ht]
+    \centering
+    \includegraphics[width=#2mm]{#1}%{#1.#2}
+    \caption[#3]{#4}
+
+    \label{#1}
+    \end{figure}
+}
+
+\newcommand{\fig}[1]{Fig.(\ref{#1})}
+\newcommand{\eqn}[1]{Eq.(\ref{#1})}
+\newcommand{\chap}[1]{Chapter \ref{#1}}
+
+\newcommand{\Ds}[1]{\mathsf{#1}}
+\newcommand{\ds}{\mathsf{d}}
+\newcommand{\Dr}[1]{\mathrm{#1}}
+\newcommand{\dr}{\mathrm{d}}
+\newcommand{\dd}{\mathrm{d}}
+
+\newcommand{\mat}[1]{\mathbf{\underline{#1}}}
+\newcommand{\ranktwo}[1]{\underline{#1}}
+\newcommand{\rankthree}[1]{\mathbf{\underline{\underline{#1}}}}
+\newcommand{\rankfour}[1]{\mathbf{\underline{\underline{\underline{#1}}}}}
+
+\renewcommand{\vec}[1]{\pmb{#1}}
+\newcommand{\vecs}[1]{\boldsymbol{#1}}
+\newcommand{\vecn}[1]{\vec #1}
+\newcommand{\vect}[1]{\vec{\tilde #1}}
+\newcommand{\vecb}[1]{\vec{\breve #1}}
+\newcommand{\mx}[1]{\mathbf{\bm{#1}}} % Matrix command
+\newcommand{\vc}[1]{\mathbf{\bm{#1}}} % Vector command
+\newcommand{\rot}[1]{\vec \nabla \times {#1} } % rot
+\newcommand{\divv}[1]{\vec \nabla \cdot {#1} } % rot
+
+\newcommand{\partu}[2]{ \dfrac{\partial #1}{\partial #2} } % partial
+\newcommand{\partuu}[2]{ \dfrac{\partial^2 #1}{\partial #2^2} } % partial
+\newcommand{\partuv}[3]{\dfrac{\partial^2 #1}{\partial #2 \partial #3} } % partial
+
+\newcommand{\od}[1]{ \hat #1^{\dag}}
+\newcommand{\ohudo}[3]{ \hat #1_#2^{\dag #3}}
+
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\lVert#1\rVert}
+
+\usepackage{shellesc}
+%\AtEndDocument{\ShellEscape{cp aux/physical_basics_00.pdf ./}}
+
+\title{Quantum Optics}
+\author{Rolf Wester}
+\date{\today}
+\makeindex
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+%\listoffigures
+%\listoftables
+%\todototoc
+%\listoftodos[ToDos]
+
+\DeclareGraphicsExtensions{.pdf,.png}
+\graphicspath{{./figures/}}
+
+%Latex workshop view PDF in vscode tap
+% ctrl + left mouse in pdf
+
+\input{chapter/radtrans_01.tex}
+\input{chapter/radtrans_02.tex}
+\input{chapter/radtrans_03.tex}
+
+\appendix
+
+\input{chapter/radtrans_a01.tex}
+\input{chapter/radtrans_a02.tex}
+\input{chapter/radtrans_a03.tex}
+
+\printbibliography[title={References}]
+
+\end{document}
+
+% syntex pdf => latex: Ctrl left mouse
+% syntex latex = pdf: Ctrl Alt j

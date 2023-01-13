@@ -1,0 +1,198 @@
+\section{Derivation of the Radiation Transfer Equation}
+
+\subsection{Radiation Transfer Equation in Frequency Space}
+
+The radiation transfer equation is given by:
+
+\begin{align}
+&\dfrac{d I_{\nu}}{ds} = - \kappa_{\nu} I_{\nu} + \epsilon_{\nu} \\
+&I_{\nu}        : \left[\dfrac{W}{m^2 \; sr \; Hz}\right] \\
+&\epsilon_{\nu} : \left[\dfrac{W}{m^3 \; sr \; Hz}\right] \\
+&\kappa_{\nu}   : \left[\dfrac{1}{m}\right]
+\end{align}
+
+The spontaneous emission is given by: 
+\begin{align}
+\epsilon_{\nu} = \dfrac{1}{4 \pi} h \nu N_u A_{ul} f(\nu) \;\;\; , \;\;\; \left[\dfrac{W}{m^3 sr Hz}\right]
+\end{align}
+
+With the line shape $f(\nu)$ function which is normalized according to:
+\begin{align}
+\int f(\nu) d\nu = 1
+\end{align}
+
+\subsubsection{Thermodynamic Equilibrium}
+
+In total thermodynamic equilibrium it holds:
+\begin{align}
+\dfrac{d I_{\nu}}{ds} = - \kappa_{\nu} I_{\nu} + \epsilon_{\nu} = 0
+\end{align}
+
+The radiation density in thermodynamical equilibrium is given by the Planck function:
+\begin{align}
+	&u_{\nu} = \dfrac{4 \pi \;\; 2 h \nu^3}{c^3}  \dfrac{1}{\exp\left(\dfrac{h \nu}{k_B T}\right) - 1} \;\;\; , \;\;\; \left[\dfrac{J}{m^3 Hz}\right]
+\end{align}
+The intensity is given by:
+\begin{align}
+	I_{\nu} = \dfrac{u_{\nu}}{4 \pi} c
+\end{align}
+which yields:
+\begin{align}
+	I_{\nu} = \dfrac{2 h \nu^3}{c^2}  \dfrac{1}{\exp\left(\dfrac{h\nu}{k_B T}\right) - 1} \;\;\; , \;\;\; \left[\dfrac{W}{m^2 sr Hz}\right]
+\end{align}
+
+The absorption coefficient $\kappa$ then is given by. 
+\begin{align}
+	\kappa_{\nu} = \dfrac{1}{4 \pi} h \nu N_u A_{ul} f(\nu) \;\; \left(\exp\left(\dfrac{h \nu}{k_B T}\right) - 1\right) \dfrac{c^2}{2 h \nu^3}   \;\;\; , \;\;\; \left[\dfrac{1}{m}\right]
+\end{align}
+
+\begin{align}
+	\kappa_{\nu} = \dfrac{1}{8 \pi} \dfrac{c^2}{\nu^2} N_u A_{ul} \left(\exp\left(\dfrac{h \nu}{k_B T}\right) - 1\right) f(\nu)  \;\;\; , \;\;\; \left[\dfrac{1}{m}\right]
+\end{align}
+
+
+\begin{align}
+\kappa_\nu = \dfrac{h \nu}{c} \left(N_l B_{lu} - N_u B_{ul}\right) f(\nu)
+\end{align}
+
+\begin{align} 
+\kappa_\nu = \dfrac{h \nu}{c} N \left(g_l \exp\left(-\dfrac{E_l}{k_B T}\right) B_{lu} - g_u\exp\left(-\dfrac{E_u}{k_B T}\right) B_{ul}\right) f(\nu)
+\end{align}
+
+\begin{align}
+\kappa_\nu = \dfrac{h \nu}{c} N \exp\left(-\dfrac{E_u}{k_B T}\right) \left(\exp\left(-\dfrac{(E_u-E_l)}{k_B T}\right) 
+g_l B_{lu} - g_u B_{ul}\right) f(\nu)
+\end{align}
+
+\begin{align}
+g_l B_{lu} = g_u B_{ul}
+\end{align}
+
+\begin{align}
+\kappa_\nu = \dfrac{h \nu}{c} N g_u B_{ul} \exp\left(-\dfrac{E_u}{k_B T}\right) 
+\left(\exp\left(-\dfrac{h \nu}{k_B T}\right) - 1\right) f(\nu)
+\end{align}
+
+\begin{align}
+\kappa_\nu = \dfrac{h \nu}{c} B_{ul} N_u \left(\exp\left(-\dfrac{h \nu}{k_B T}\right) - 1\right) f(\nu) \;\;\; , \;\;\; \left[\dfrac{1}{m}\right]
+\end{align}
+
+\begin{align}
+\dfrac{h \nu}{c} B_{ul} N_u = \dfrac{1}{8 \pi} \dfrac{c^2}{\nu^2} N_u A_{ul}
+\end{align}
+
+\begin{align}
+B_{ul} = \dfrac{1}{8 \pi} \dfrac{c^3}{h \nu^3} A_{ul} \;\;\; , \;\;\; \left[\dfrac{m^3}{J s^2}\right]
+\end{align}
+
+
+\subsection{Radiation Transfer Equation in Wavelength Space}
+
+\begin{align}
+I_\lambda = \dfrac{2 \pi h c^2}{\lambda^5} \dfrac{1}{\exp\left(\dfrac{h c}{\lambda k_B T}\right) - 1}
+\end{align}
+
+\begin{align}
+I = \int I_{\lambda} d\lambda
+\end{align}
+
+\begin{align}
+I_{\nu} d\nu = I_{\lambda} d\lambda
+\end{align}
+\begin{align}
+&\nu = \dfrac{c}{\lambda} \\
+&d\nu = -\dfrac{c}{\lambda^2} d\lambda \\
+&I_{\nu} \dfrac{c}{\lambda^2} d\lambda = I_{\lambda} d\lambda \\
+&I_{\nu} \dfrac{c}{\lambda^2} = I_{\lambda} \\
+&I_{\nu} = I_{\lambda} \dfrac{\lambda^2}{c}
+\end{align}
+
+
+\begin{align}
+\dfrac{d I_{\lambda}}{ds} = - \kappa_\lambda I_{\lambda} + 	\epsilon_\lambda
+\end{align}
+
+\begin{align}
+\kappa_\lambda = \dfrac{h}{\lambda_0} \left(N_l B_{lu} - N_u B_{ul}\right) f(\lambda) \dfrac{\lambda^2}{c}
+\end{align}
+
+\begin{align}
+\kappa_\lambda = \dfrac{h \lambda}{c} \left(N_l B_{lu} - N_u B_{ul}\right) f(\lambda) 
+\;\;\; , \;\;\; \left[\dfrac{1}{m}\right]
+\end{align}
+
+\begin{align}
+\epsilon_\nu f(\nu) d \nu &= 	\epsilon_\lambda f(\lambda)  d\lambda \\
+f(\nu) d \nu &= 	f(\lambda)  d\lambda \\
+\epsilon_\nu &= \epsilon_\lambda \\
+\epsilon_\lambda &= \dfrac{1}{4 \pi} \dfrac{h c}{\lambda} N_u A_{ul} f(\lambda) 
+\;\;\; , \;\;\; \left[\dfrac{W}{m^3 sr \;m}\right]
+\end{align}
+
+\begin{align}
+\int f_{\lambda} d\lambda = 1
+\end{align}
+
+\begin{align}
+B_{ul} = A_{ul} \dfrac{\lambda^3}{8 \pi h} \;\;\; , \;\;\; \left[\dfrac{m^3}{J s^2}\right]
+\end{align}
+
+\begin{align}
+B_{lu} = \dfrac{g_u}{g_l} B_{ul}
+\end{align}
+
+\begin{align}
+<\epsilon> = \int \epsilon_{\lambda}(\lambda) d\lambda
+\end{align}
+
+\begin{align}
+<\kappa> = \dfrac{\int \kappa_{\lambda}(\lambda) I_{\lambda}(\lambda) d\lambda}{\int I_{\lambda}(\lambda) d\lambda}
+\end{align}
+
+In thermal equilibrium the intensity is constant:
+\begin{align}
+&\dfrac{d I_{\lambda}}{ds} = - \kappa_\lambda I_{\lambda} + 	\epsilon_\lambda = 0 \\
+&\kappa_\lambda = \dfrac{\epsilon_\lambda}{I_{\lambda}}
+\end{align}
+
+and the intensity is given by Planck's formula:
+\begin{align}
+I_\lambda = \dfrac{2 h c^2}{\lambda^5} \dfrac{1}{\exp\left(\dfrac{h c}{\lambda k_B T}\right) - 1}
+\end{align}
+
+With this the net absorption coefficient $\kappa_\lambda$ is:
+\begin{align}
+\kappa_\lambda = \dfrac{\dfrac{1}{4 \pi} \dfrac{h c}{\lambda} N_u A_{ul} f(\lambda) }{\dfrac{2 h c^2}{\lambda^5} \dfrac{1}{\exp\left(\dfrac{h c}{\lambda k_B T}\right) - 1}} =
+\dfrac{\lambda^4 }{8 \pi c} A_{ul} N_u  \left(\exp\left(\dfrac{h c}{\lambda k_B T}\right) - 1\right) f(\lambda)
+\end{align}
+The densities of upper and lower state are given by:
+\begin{align}
+N_u &= N \dfrac{g_u}{Q(T)} \exp\left(- \dfrac{E_u}{k_B T} \right) \\
+N_l &= N \dfrac{g_l}{Q(T)} \exp\left(- \dfrac{E_l}{k_B T} \right)
+\end{align}
+which yields:
+\begin{align}
+\kappa_\lambda  =
+\dfrac{\lambda^4 }{8 \pi c} A_{ul} N \dfrac{g_u}{Q(T)}
+\left( \exp\left(-\dfrac{E_l}{\lambda k_B T}\right) - \exp\left(-\dfrac{E_u}{\lambda k_B T}\right) \right) f(\lambda)
+\end{align}
+With:
+\begin{align}
+B_{ul} &= \dfrac{1}{8 \pi} \dfrac{\lambda^3}{h} A_{ul} \;\;\; , \;\;\; \left[\dfrac{m^3}{J s^2}\right] \\
+B_{lu} &= \dfrac{g_u}{g_l} B_{ul}
+\end{align}
+this becomes
+\begin{align}
+\kappa_\lambda  =
+\dfrac{h \lambda }{c}  
+\left(  B_{ul} N \dfrac{g_u}{Q(T)} \exp\left(-\dfrac{E_l}{\lambda k_B T}\right) - 
+B_{lu} N \dfrac{g_l}{Q(T)} \exp\left(-\dfrac{E_u}{\lambda k_B T}\right) \right) f(\lambda)
+\end{align}
+and:
+
+\begin{align}
+\kappa_\lambda  = \dfrac{h \lambda }{c}  
+\left(  B_{lu} N_l -  B_{ul} N_u \right) f(\lambda)
+\end{align}
+
+
