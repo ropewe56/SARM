@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="148.51543mm"
+   height="160.87967mm"
+   viewBox="0 0 148.51543 160.87967"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="geomtry.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.7"
+     inkscape:cx="719.53714"
+     inkscape:cy="178.03543"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:snap-global="false"
+     inkscape:measure-start="804.286,652.857"
+     inkscape:measure-end="834.286,605.714"
+     fit-margin-top="5"
+     fit-margin-left="5"
+     fit-margin-right="5"
+     fit-margin-bottom="5"
+     inkscape:window-width="1600"
+     inkscape:window-height="827"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid823"
+       originx="-91.8809"
+       originy="-116.18048" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-91.880905,-19.939826)">
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect815"
+       width="136.51379"
+       height="1.5762846"
+       x="96.880905"
+       y="161.8791" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 97.895833,39.29584 97.517856,161.38221 202.59523,40.429769"
+       id="path819"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 97.290394,162.02293 233.74115,139.65027"
+       id="path821"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <rect
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect825"
+       width="136.64447"
+       height="0.95104158"
+       x="98.251862"
+       y="39.425072" />
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="path836"
+       sodipodi:type="arc"
+       sodipodi:cx="98.689583"
+       sodipodi:cy="160.92857"
+       sodipodi:rx="24.757439"
+       sodipodi:ry="23.434523"
+       sodipodi:start="4.6574512"
+       sodipodi:end="6.1855358"
+       sodipodi:open="true"
+       d="m 97.330148,137.52941 a 24.757439,23.434523 0 0 1 25.998932,21.11443" />
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="path836-3"
+       sodipodi:type="arc"
+       sodipodi:cx="97.706886"
+       sodipodi:cy="161.01785"
+       sodipodi:rx="50.866364"
+       sodipodi:ry="54.222771"
+       sodipodi:start="4.7061435"
+       sodipodi:end="5.4527295"
+       sodipodi:open="true"
+       d="m 97.389203,106.79614 a 50.866364,54.222771 0 0 1 34.629047,14.19235" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="150.43452"
+       y="175.66963"
+       id="text855"><tspan
+         sodipodi:role="line"
+         id="tspan853"
+         x="150.43452"
+         y="175.66963"
+         style="stroke-width:0.26458332">earth</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="147.03275"
+       y="32.794643"
+       id="text859"><tspan
+         sodipodi:role="line"
+         id="tspan857"
+         x="147.03275"
+         y="32.794643"
+         style="stroke-width:0.26458332">TOA</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="106.96726"
+       y="101.96429"
+       id="text863"><tspan
+         sodipodi:role="line"
+         id="tspan861"
+         x="106.96726"
+         y="101.96429"
+         style="stroke-width:0.26458332">40°</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="121.70833"
+       y="147.69939"
+       id="text867"><tspan
+         sodipodi:role="line"
+         id="tspan865"
+         x="121.70833"
+         y="147.69939"
+         style="stroke-width:0.26458332">80°</tspan></text>
+  </g>
+</svg>

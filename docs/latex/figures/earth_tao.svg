@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="55.840366mm"
+   height="80.323715mm"
+   viewBox="0 0 55.840366 80.323715"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="earth_tao.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="3.959798"
+     inkscape:cx="98.470329"
+     inkscape:cy="255.14997"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:snap-global="false"
+     inkscape:window-width="1600"
+     inkscape:window-height="827"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     fit-margin-top="2"
+     fit-margin-right="2"
+     fit-margin-left="2"
+     fit-margin-bottom="2" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-92.69709,-67.205905)">
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000008;stroke-width:1.08961737;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path815"
+       sodipodi:type="arc"
+       sodipodi:cx="105.83334"
+       sodipodi:cy="144.88106"
+       sodipodi:rx="62.698849"
+       sodipodi:ry="62.871441"
+       sodipodi:start="4.5353853"
+       sodipodi:end="5.3008579"
+       sodipodi:open="true"
+       d="m 94.793276,82.991939 a 62.698849,62.871441 0 0 1 45.843454,9.593186" />
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000008;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path815-3"
+       sodipodi:type="arc"
+       sodipodi:cx="106.16026"
+       sodipodi:cy="144.89954"
+       sodipodi:rx="69.393562"
+       sodipodi:ry="69.393364"
+       sodipodi:start="4.6923276"
+       sodipodi:end="5.1184403"
+       sodipodi:open="true"
+       d="m 104.76823,75.520136 a 69.393562,69.393364 0 0 1 28.80144,5.628574" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 104.98558,75.473555 0.54568,69.956985 27.79509,-64.388579"
+       id="path832"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 105.08786,81.620387 27.77077,-0.444793"
+       id="path836"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:5.64444447px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="131.86411"
+       y="98.118073"
+       id="text849"><tspan
+         sodipodi:role="line"
+         id="tspan847"
+         x="131.86411"
+         y="98.118073"
+         style="font-size:5.64444447px;stroke-width:0.26458332">Earth</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:5.64444447px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="114.06079"
+       y="73.395142"
+       id="text849-6"><tspan
+         sodipodi:role="line"
+         id="tspan847-7"
+         x="114.06079"
+         y="73.395142"
+         style="font-size:5.64444447px;stroke-width:0.26458332">TOA</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:5.64444447px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="106.23964"
+       y="101.82642"
+       id="text871"><tspan
+         sodipodi:role="line"
+         id="tspan869"
+         x="106.23964"
+         y="101.82642"
+         style="font-size:5.64444447px;stroke-width:0.26458332">R</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:5.64444447px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="100.56016"
+       y="80.578499"
+       id="text875"><tspan
+         sodipodi:role="line"
+         id="tspan873"
+         x="100.56016"
+         y="80.578499"
+         style="font-size:5.64444447px;stroke-width:0.26458332">h</tspan></text>
+  </g>
+</svg>

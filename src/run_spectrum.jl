@@ -120,6 +120,7 @@ input_run_parameter = Dict(
 
 function get_directory_paths()
     radtrans_root = dirname(@__DIR__)
+    radtrans_root = "/home/wester/Projects/Julia/Private/SimpleRadTrans.jl"
     data_dir  = joinpath(radtrans_root, "HITRAN")
     input_dir = joinpath(radtrans_root, "radinput")
     out_root  = joinpath(radtrans_root, "radoutput")
@@ -135,9 +136,18 @@ function run_radition_transfer(json_file_paths)
     end
 end
 
+function run_radition_transfer_rust(json_file_paths, rust_exe)
+    for json_file in json_file_paths
+        println(json_file)
+        `$rust_exe $json_file`
+    end
+end
 data_dir, input_dir, output_root = get_directory_paths()
 json_file_paths = create_parameter_json(input_dir, output_root, "C", input_run_parameter)
 
-run_radition_transfer(json_file_paths)
+#run_radition_transfer(json_file_paths)
+
+rust_exe = "/home/wester/Projects/GitHub/SARM/rust/rust/target/debug/sarm"
+run_radition_transfer_rust(json_file_paths, rust_exe)
 
 
