@@ -34,7 +34,7 @@ pub struct Spectrum {
     pub p_ref    : f64,
     /// vector of line data
     pub lines    : Vec<Line>,
-    /// the Interplator for the 
+    /// the Interplator for the
     pub Q_CO2    : Interpolator,
     /// pressure over height
     pub p_vs_h   : Interpolator,
@@ -50,7 +50,7 @@ pub struct Spectrum {
     pub z_iout   : Array1<i64>,
     /// wavelengths
     pub λ        : Array1<f64>,
-    /// absorptions over wavelengths 
+    /// absorptions over wavelengths
     pub κ_c      : Array1<f64>,
     /// emissivity  over wavelengths
     pub ϵ_c      : Array1<f64>,
@@ -72,6 +72,8 @@ impl Spectrum {
     pub fn new(json_file: &str) -> Spectrum {
         // create a Parameter object form the jso strinh
         let par : Parameter = Parameter::new(json_file);
+        par.print_parameter();
+
         // spectral data (HITRAN)
         let spectral_data = load_npy_2(&par.specdat_path);
         // height values
@@ -99,8 +101,8 @@ impl Spectrum {
         let mut lines : Vec<Line> = Vec::with_capacity(nb_lines);
 
         let mut isotope_ids = HashMap::new();
-        
-        // Create Line objects from iput line data 
+
+        // Create Line objects from iput line data
         for iline in 0..nb_lines {
             let λ_ul0  = spectral_data[[iline, 0]];
             let E_l    = spectral_data[[iline, 1]];
@@ -127,7 +129,7 @@ impl Spectrum {
             // Lorentz line width
             let ΔλL0 = λ_ul0*λ_ul0 * γ;
 
-            // id of 
+            // id of
             let isotope_id = iso_id as usize;
             let h = isotope_ids.entry(isotope_id).or_insert(0);
             *h += 1;
@@ -249,11 +251,11 @@ impl Spectrum {
     }
 
     /// Save wavelength and intensity to npy file
-    /// 
+    ///
     /// λ - wavelengths array
-    /// 
+    ///
     /// I - intensity array
-    /// 
+    ///
     /// path - filepath
     pub fn save_intensity_as_npy(&self, λ: &Array1<f64>, I: &Array1<f64>, path: &str) {
         let  n = I.len();
@@ -291,13 +293,13 @@ impl Spectrum {
     }
 
     /// Compute emission and absorption coefficients of the lines
-    /// 
+    ///
     /// T - temperature
-    /// 
+    ///
     /// N - atmosphere density
-    /// 
+    ///
     /// p - pressure
-    /// 
+    ///
     /// NCO2 - CO2 concentration
     pub fn compute_emission_and_absorption(&mut self,
                     T: f64, N: f64, p: f64, NCO2: f64) ->  (f64, f64) {
@@ -368,9 +370,9 @@ impl Spectrum {
     }
 
     /// Convolve the all lines using their line shape
-    /// 
+    ///
     /// T - temperature
-    /// 
+    ///
     /// N - density
     pub fn convolution(&mut self, T: f64, N: f64)  {
         let nb_lines = self.lines.len();
@@ -477,7 +479,7 @@ impl Spectrum {
 
         // total emission
         let mut tot_e = 0.0;
-        // 
+        //
         let mut Tmin = self.par.T_surface;
         let mut Nmin = 1.0e30;
 
@@ -505,11 +507,11 @@ impl Spectrum {
             }
 
             let t1 = Instant::now();
-            // compute the line coefficients 
+            // compute the line coefficients
             let (ΔλL_mean, ΔλD_mean) = self.compute_emission_and_absorption(T, N, p, *NCO2);
             let t2 = Instant::now();
-            // compute ϵ(λ) = sum_i \int ϵ_i(λ_i) f(λ-λ_i) dλ 
-            // compute κ(λ) = sum_i \int κ_i(λ_i) f(λ-λ_i) dλ 
+            // compute ϵ(λ) = sum_i \int ϵ_i(λ_i) f(λ-λ_i) dλ
+            // compute κ(λ) = sum_i \int κ_i(λ_i) f(λ-λ_i) dλ
             self.convolution(T, N);
             let t3 = Instant::now();
 
@@ -608,7 +610,7 @@ impl Spectrum {
         let T = self.par.T_surface;
         self.compute_and_save_planck(λ1, λ2, nλ, T, [self.par.out_dir.as_str(), "planck_intensity"].join("/").as_str());
 
-        // vector of angles 
+        // vector of angles
         let vθ = &self.theta_deg * PI/180.0;
         // vector of CO2 concentrations
         let vNCO2 = self.NCO2.clone();
@@ -637,7 +639,7 @@ impl Spectrum {
                 // integrate along path
                 let mut results = self.integrate_along_path(iN, iθ, NCO2, θ);
 
-                // save results 
+                // save results
                 let fname = format!("result-{}_{}.npy", iN, iθ);
                 results.write_data(&self.par.out_dir.as_str(), &fname);
             }

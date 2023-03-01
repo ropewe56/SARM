@@ -166,7 +166,6 @@ end
 
 function create_parameter_json(input_dir, output_root, subdir, input_run_parameter)
     paths = get_paths_dict(input_dir, output_root)
-    println(paths)
     wite_data_input_files(input_dir, input_run_parameter)
 
     subsubdirs_vec = subsubdir_names(output_root, subdir, input_run_parameter)

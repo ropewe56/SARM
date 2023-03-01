@@ -2,6 +2,7 @@ import Statistics
 using StaticArrays
 
 using Common
+using PhysConst
 mutable struct Spectrum
     line_data   :: LineData
     T_ref       :: Float64          # reference temperature

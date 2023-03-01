@@ -2,6 +2,8 @@ using StaticArrays
 using StatsBase
 using HDF5
 
+using PhysConst
+
 const i_λ_ul0 = 1
 const i_E_l   = 2
 const i_E_u   = 3

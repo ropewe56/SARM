@@ -1,3 +1,5 @@
+HITRAN/
 build/
 *.synctex.gz
 target/
+Cargo.lock

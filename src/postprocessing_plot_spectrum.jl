@@ -3,6 +3,7 @@ pygui(false)
 pygui(:qt5)
 
 using Common
+using PhysConst
 
 function plot_lines()
     input_file = joinpath(@__DIR__, "CO2.hdf5")

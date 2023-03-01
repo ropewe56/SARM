@@ -1,4 +1,5 @@
 using Common
+using PhysConst
 struct GaussProfile
     Δλ0  :: Float64
     ln2  :: Float64

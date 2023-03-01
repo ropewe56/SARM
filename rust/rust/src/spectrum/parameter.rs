@@ -2,7 +2,7 @@ use serde_json::{Value};
 use ndarray::prelude::*;
 use ndarray::{Array};
 use std::iter::FromIterator;
-
+use std::io::stdout;
 use physical_constants;
 use std::f64::consts::PI;
 
@@ -147,5 +147,40 @@ impl Parameter {
                     theta_path     : get_string(&json, "paths", "theta_path"),
                     specdat_path   : get_string(&json, "paths", "specdat_path"),
                 }
+    }
+    pub fn print_parameter(&self) {
+        print!("h              = {:12.2e}\n", self.h              );
+        print!("c0             = {:12.2e}\n", self.c0             );
+        print!("kB             = {:12.2e}\n", self.kB             );
+        print!("σ              = {:12.2e}\n", self.σ              );
+        print!("mCO2           = {:12.2e}\n", self.mCO2           );
+        print!("λmin           = {:12.2e}\n", self.λmin           );
+        print!("λmax           = {:12.2e}\n", self.λmax           );
+        print!("Δλ             = {:12.2e}\n", self.Δλ             );
+        print!("T_surface      = {:12.2e}\n", self.T_surface      );
+        print!("T_of_h         = {}\n", self.T_of_h         );
+        print!("N_of_h         = {}\n", self.N_of_h         );
+        print!("Δλ_factor      = {:12.2e}\n", self.Δλ_factor      );
+        print!("p_ref          = {:12.2e}\n", self.p_ref          );
+        print!("T_ref          = {:12.2e}\n", self.T_ref          );
+        print!("albedo         = {:12.2e}\n", self.albedo         );
+        print!("with_emission  = {}\n", self.with_emission  );
+        print!("background     = {}\n", self.background     );
+        print!("max_isotope_id = {}\n", self.max_isotope_id );
+        print!("integrate      = {}\n", self.integrate      );
+        print!("compute_F      = {}\n", self.compute_F      );
+        print!("out_dir        = {}\n", self.out_dir        );
+        print!("logfile        = {}\n", self.logfile        );
+        print!("logfile_F      = {}\n", self.logfile_F      );
+        print!("infofile       = {}\n", self.infofile       );
+        print!("NCO2_path      = {}\n", self.NCO2_path      );
+        print!("theta_path     = {}\n", self.theta_path     );
+        print!("specdat_path   = {}\n", self.specdat_path   );
+        print!("T_Q_path       = {}\n", self.T_Q_path       );
+        print!("h_p_path       = {}\n", self.h_p_path       );
+        print!("h_T_path       = {}\n", self.h_T_path       );
+        print!("z_path         = {}\n", self.z_path         );
+        print!("z_iout         = {}\n", self.z_iout         );
+        stdout().flush();
     }
 }

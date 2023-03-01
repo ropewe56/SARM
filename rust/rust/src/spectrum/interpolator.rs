@@ -11,7 +11,7 @@ impl Interpolator {
 
     pub fn new(fname: &str) -> Interpolator {
         let xy = load_npy_2(&fname);
-        println!("{} {} {}", xy.nrows(), xy.ncols(), fname);
+        println!("{} {} {} {} {} {}", xy.nrows(), xy.ncols(), fname, xy[[0,0]], xy[[1,0]], xy[[0,1]]);
         let n : usize = xy.nrows();
         let ddx = 1.0 / (xy[[1,0]] - xy[[0,0]]);
         let x1  = xy[[0,0]];

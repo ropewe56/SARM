@@ -1,19 +1,17 @@
 \section{Introduction}
 
-This simple radiative transfer model through the atmosphere including only $CO_2$ as interacting agent is by no means a model of radiative transfer in the atmosphere with ist large number of climat active gases including clouds, aerosols etc. The current model is just meant to give some basic insights into the absorption and emission processes of infrared radiation on it's way from the earth surface to the top of the atmosphere (TAO) and only interacting with $CO_2$ in th wavelength region aroung $15\; \mu m$. Temperature and pressure of the atmosphere is fixed
-
+\textbf{SARM} is a model for the radiative transfer of IR radiation from the earth's surface to the  top of the atmosphere (TOA) in which only $\mathrm{CO}_2$ interacts with the radiation. It is by no means an accurate model of radiative transport in the atmosphere with its multitude of climate-active gases, clouds, aerosols etc. The current model is only intended to provide some basic insights into the absorption and emission processes of infrared radiation on its way from the earth's surface to TAO. The wavelength range is limited to $(13 - 17)\; \mu m$. Temperature and pressure of the atmosphere are functions of altitude. However, they are not self-consistently calculated in the frame of the model but are assumed to be given.
 \section{Model Description}
 
-The key assumptions of the simple atmosphere model are:
+The key assumptions of \textbf{SARM} are:
 \begin{itemize}
-	\item The only species interating with infrared radiation in the $15 \mu m$ range is $CO_2$
-	\item The temperature and pressure profiles of the atmosphere are prescribed, thus there is no self consistency between absorption and temperature
-	\item Only upward traveling radiation is considered
-	\item The main result is the difference of infrared radiation at the top of the atmosphere (TOA) at $70 km$ escaping to free space with different $CO_2$ concentrations
-	\item Scattering will be neglected
-	\item The atmospheric gas is in local thermodynamic equilibrium so that all energy levels are occupied according to 
-	the Boltzmann factor
-	\item All spectroscopic data of $CO_2$ are taken from the HITRAN data base. 
+	\item The only species interating with infrared radiation in the $15 \mu m$ range is $\mathrm{CO}_2$
+	\item The temperature and pressure profiles of the atmosphere are prescribed, thus there is no self consistency between absorption, emission and temperature
+	\item Only upward traveling radiation is considered, the model is 1-dimensional
+	\item The main result is the difference in the power of infrared radiation at the top of the atmosphere (TOA) at $70 \;km$ at different $\mathrm{CO}_2$ concentrations.
+	\item Scattering at areosols, droplets etc. will be neglected
+	\item The atmospheric gas is in local thermodynamic equilibrium so that all energy levels are occupied according to the Boltzmann factor
+	\item All $\mathrm{CO}_2$  spectroscopic data are taken from the HITRAN data base.
 \end{itemize}
 
 
@@ -22,7 +20,7 @@ The key assumptions of the simple atmosphere model are:
 The radiation transport equation reads:
 \begin{align}
 	\label{eqn1}
-	\dfrac{d I(\lambda)}{ds} = - \kappa(\lambda) I(\lambda) + \epsilon(\lambda)
+	\dfrac{d I(\lambda)}{dz} = - \kappa(\lambda) I(\lambda) + \epsilon(\lambda)
 \end{align}
 with the spectral intensity:
 \begin{align*}
@@ -45,25 +43,26 @@ line coefficients:
 
 The emission coefficient $\epsilon_j(\lambda)$ due to spontaneous emission from the upper level $u$ to the lower level $l$ is given by:
 \begin{align}
-	\epsilon_j(\lambda) &= \dfrac{1}{4 \pi} \dfrac{h c}{\lambda} N_u A_{ul} f(\lambda)
+	\epsilon_j(\lambda) &= \dfrac{1}{4 \pi} \dfrac{h c}{\lambda} N_{u,j} A_{ul,j} f_j(\lambda)
 	 \dfrac{\lambda^2}{c}
 \end{align}
-$A_{ul}$ ist the Einstein coefficient of spontaneous emission from upper to lower energy state, $N_u$ the density of the upper state and $f(\lambda)$ is the line shape. The absorption coefficient $\kappa_j(\lambda)$ of this transition is given by:
+$A_{ul,j}$ ist the Einstein coefficient of spontaneous emission from upper to lower energy state, $N_{u,j} $ the density of the upper state and $f_j(\lambda)$ is the line shape. The absorption coefficient $\kappa_j(\lambda)$ of this transition is given by:
 \begin{align}
-	\kappa_j(\lambda)  = \dfrac{h}{\lambda}  \left(  B_{lu} N_l -  B_{ul} N_u \right) f(\lambda)
+	\kappa_j(\lambda)  = \dfrac{h}{\lambda}  \left(  B_{lu;j} N_{l;j} -  B_{ul;j} N_{u;j} \right) f_j(\lambda)
 	 \dfrac{\lambda^2}{c}
 \end{align}
 with the Einstein coefficients of absorption and stimulated emission:
 \begin{align}
-	B_{ul} &= \dfrac{1}{8 \pi} \dfrac{\lambda^3}{h} A_{ul} \;\;\; , \;\;\; \left[\dfrac{m^3}{J s^2}\right] \\
-	B_{lu} &= \dfrac{g_u}{g_l} B_{ul}
+	B_{ul;j} &= \dfrac{1}{8 \pi} \dfrac{\lambda^3}{h} A_{ul;j} \;\;\; , \;\;\; \left[\dfrac{m^3}{J s^2}\right] \\
+	B_{lu;j} &= \dfrac{g_u}{g_l} B_{ul;j}
 \end{align}
-The densities of the upper and lower states are given by the Boltzmann distribution at local temperature $T$:
+The densities of the upper and lower states are given by the Boltzmann distribution at local temperature $T(z)$:
 \begin{align}
-	N_u &= N \dfrac{g_u}{Q(T)} \exp\left(- \dfrac{E_u}{k_B T} \right) \\
-	N_l &= N \dfrac{g_l}{Q(T)} \exp\left(- \dfrac{E_l}{k_B T} \right)
+	N_{u;j} &= N \dfrac{g_{u;j}}{Q(T)} \exp\left(- \dfrac{E_{u;j}}{k_B T} \right) \\
+	N_{l;j} &= N \dfrac{g_{l;j}}{Q(T)} \exp\left(- \dfrac{E_{l;j}}{k_B T} \right)
 \end{align}
-$g_u$ and $g_l$ are the degeneracies of the upper and lower level respectively and Q(T) is the partition function.
+$g_{u;j}$ and $g_{l;j}$ are the degeneracies of the upper and lower level respectively and Q(T) is the partition function of the $\mathrm{CO}_2$ isotope of line $j$.
+
 
 
 \subsection{Line Shapes}
@@ -80,13 +79,13 @@ Doppler broadened line shapes are given by a Gaussian function:
 \end{align}
 with the half width at half maximum (HWHM) line width:
 \begin{align}
-\dfrac{\Delta \lambda}{\lambda} = \dfrac{v}{c} = \dfrac{1}{c} \sqrt{\dfrac{2 k_B T}{m}}
+\dfrac{\Delta \lambda}{\lambda} = \dfrac{v}{c} = \dfrac{1}{c} \sqrt{\dfrac{2 k_B T}{M}}
 \end{align}
-Doppler broadening is  determined by the temperature and the mass of the particles.
+Doppler broadening is  determined by the temperature and the mass $M$ of the particles.
 
 \subsubsection{Pressure Broadening}
 
-Pressure broadening is caused by the collisions between molecules, in the present model mainly between $N_2$ and $O_2$ with $CO_2$. 
+Pressure broadening is caused by the collisions between molecules, in the present model mainly between $\mathrm{N}_2$ and $\mathrm{O}_2$ with $\mathrm{CO}_2$. 
 The main determining factors are the concentration of the collision partners and the collision frequency. The line shapes are given by a Lorentz function:
 \begin{align}
 	f_L(\lambda) &= \dfrac{1}{\pi} \dfrac{\Delta \lambda}{ (\lambda - \lambda_0)^2 + \Delta \lambda^2} \\
@@ -97,11 +96,11 @@ Contrary to the Gaussian line shapes of Doppler broadening Lorentz functions hav
 \begin{align}
 	F(x_p) = \dfrac{1}{\pi} \int_{-x_p}^{x_p} \dfrac{1}{1 + x^2} dx = \dfrac{1}{\pi} \left(\arctan(x_p) - \arctan(-x_p)\right)
 \end{align}
-$F(x_p) = 0.9$ at $x_p \approx 6.3$, $0.97$ at $x_p = 20$ and $0.99$ at $x_p = 40$. In the absorption computations the limit is set at  $20 \Delta \lambda$ so that approximately 3\% of the radiation power is missing. To compensate for this a background of 3\% of a moving average will be added.
+$F(x_p) = 0.9$ at $x_p \approx 6.3$, $0.97$ at $x_p = 20$ and $0.99$ at $x_p = 40$. In the absorption computations the limit is set at  $20\;[] \Delta \lambda$ so that approximately 3\% of the radiation power is missing. To compensate for this a background of 3\% of a moving average is besing added.
 
 \subsubsection{Voigt Profile}
 
-The line shape is a convolution of Lorentz and Gauss functions which is called Voigt profile. For the sake of performance the Voigh tprofile is approximate by a linear interpolation of Lorentz and Gauss shapes:
+Pressure and Doppler broadening occur simulatneosly, the line shape is a convolution of Lorentz and Gauss functions which is called Voigt profile. For the sake of performance the Voight profile is approximate by a linear interpolation of Lorentz and Gauss shapes:
 \begin{align}
 	f(\lambda, \lambda_0) =
 	\begin{cases}
