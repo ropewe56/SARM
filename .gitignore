@@ -1,7 +1,9 @@
 HITRAN/
 build/
+radinput/
 radoutput/
 *.synctex.gz
 target/
 Cargo.lock
 *code-workspace
+__pycache__
