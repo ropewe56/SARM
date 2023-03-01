@@ -41,27 +41,27 @@ And finally:
 	y(x) = a_0 + a_1 x + a_2 x^2 +  a_3 x^3
 \end{align}
 
-With $a_0 = y(0)$ and $\dfrac{d y(0)}{d x} = 0$ it follows that $a_1 = 0$.
+With $a_0 = y(x_1)$ and $\dfrac{d y(x_1=0)}{d x} = 0$ it follows that $a_1 = 0$.
 The coefficients $a_2$ and $a_3$ are determined by the linear system: 
 \begin{align}
-	y(x_1) &= y(0) + a_2 x_1^2 +  a_3 x_1^3 \\
-	y(x_2) &= y(0) + a_2 x_2^2 +  a_3 x_2^3
+	y(x_2) &= y(x_1) + a_2 x_2^2 +  a_3 x_2^3 \\
+	y(x_3) &= y(x_1) + a_2 x_3^2 +  a_3 x_3^3
 \end{align}
 which can be written as matrix equation:
-\begin{align}x
-	\begin{pmatrix} x_1^2 & x_1^3 \\
-					x_2^2 & x_2^3 
+\begin{align}
+	\begin{pmatrix} x_2^2 & x_2^3 \\
+					x_3^2 & x_3^3 
 	\end{pmatrix}
 	\begin{pmatrix}	a_2 \\ a_3
 	\end{pmatrix}
 	=
-	\begin{pmatrix} y(x_1) - y(0) \\ y(x_2) - y(0)
+		\begin{pmatrix} y(x_2) - y(x_1) \\ y(x_3) - y(x_1)
 	\end{pmatrix}
 \end{align}
 Using Cramer's rule the solution is given by:
 \begin{align}
- a_2 &= \dfrac{(y(x_1) - y(0)) x_2^3 - (y(x_2) - y(0)) x_1^3}{x_1^2 x_2^3 - x_1^3 x_2^2} \\
- a_3 &= \dfrac{(y(x_2) - y(0)) x_1^2 - (y(x_1) - y(0)) x_2^2}{x_1^2 x_2^3 - x_1^3 x_2^2}
+ a_2 &= \dfrac{(y(x_2) - y(x_1)) x_3^3 - (y(x_3) - y(x_1)) x_2^3}{x_2^2 x_3^3 - x_2^3 x_3^2} \\
+ a_3 &= \dfrac{(y(x_3) - y(x_1)) x_2^2 - (y(x_2) - y(x_1)) x_3^2}{x_2^2 x_3^3 - x_2^3 x_3^2}
 \end{align}
 
 

@@ -7,7 +7,7 @@ echo $dirname
 
 $dirname/clean_latex.sh
 
-echo "konsole --hold --workdir ${dirname} -e bash ./latexmk_xelatex.sh"
+echo "konsole --hold --workdir ${dirname} -e bash ./xelatex.sh"
 
-konsole --hold --workdir ${dirname} -e bash ./latexmk_xelatex.sh
+konsole --hold --workdir ${dirname} -e bash ./xelatex.sh
 

@@ -225,10 +225,10 @@ function integrate_intensity(data_sets, id, nθ, iN, iθ, iI, NCO2, color1, colo
     R1 = I_1 - I_0
     R2 = I_2 - I_0
 
-    a0 = I_0
+    a0  = I_0
     det = θ_1^2 * θ_2^3 - θ_1^3 * θ_2^2
-    a2 = (R1 * θ_2^3 - R2 * θ_1^3) / det
-    a3 = (R2 * θ_1^2 - R1 * θ_2^2) / det
+    a2  = (R1 * θ_2^3 - R2 * θ_1^3) / det
+    a3  = (R2 * θ_1^2 - R1 * θ_2^2) / det
 
     #x, w = gausslegendre(12)
     c1, err = quadgk(x -> cos(x)*sin(x)    , 0, π*0.5, rtol=1e-8)

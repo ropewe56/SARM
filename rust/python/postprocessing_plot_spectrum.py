@@ -16,12 +16,12 @@ script_root = os.path.abspath(os.path.dirname(__file__))
 
 def load_hdf5(input_file, group, dataset):
     """Load a hdf5 file
-    
+
     Arguments:
         input_file {[type]} -- [description]
         group {[type]} -- [description]
         dataset {[type]} -- [description]
-    
+
     Returns:
         [type] -- [description]
     """
@@ -34,12 +34,12 @@ def load_hdf5(input_file, group, dataset):
 
 def load(input_file, group, dataset):
     """Load hdf5 or npy file
-    
+
     Arguments:
         input_file {[type]} -- [description]
         group {[type]} -- [description]
         dataset {[type]} -- [description]
-    
+
     Returns:
         [type] -- [description]
     """

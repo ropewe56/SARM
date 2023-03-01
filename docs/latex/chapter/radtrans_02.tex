@@ -11,28 +11,35 @@ The intensity in \eqn{eqn1} is integrated along a path from the earth surface to
 	I(\lambda,z) &= I(\lambda,z_0) \exp( -  \kappa(\lambda) (z-z_0)) + \dfrac{\epsilon(\lambda)}{\kappa(\lambda)} \left(1 - \exp( - \kappa(\lambda) (z-z_0))\right)
 \end{align}
 Because $\kappa$ and $\epsilon$ are not constant along the path from earths surface to TOA the integration is subdivided into many steps. At each step $\kappa$ and $\epsilon$ are calculated using local values of temperature and density.
+\newline
 
 In order to compute the total irradiance emanating from an area element of the surface to TOA the integration has to be done over the half sphere (\fig{fig:geometry}):
 \begin{align}
-	F(\theta) &= \int_0^{2 \pi} \int_0^{\pi/2} I(\theta) \sin(\theta) \cos(\theta)  d \theta d \phi \\
-	  &= 2 \pi \int_0^{\theta} I(\theta) \sin(\theta) \cos(\theta) d \theta
+	F &= \int_0^{2 \pi} \int_0^{\pi/2} I(\theta) \sin(\theta) \cos(\theta)  d \theta d \phi \\
+	  &= 2 \pi \int_0^{\pi/2} I(\theta) \sin(\theta) \cos(\theta) d \theta
 \end{align}
-The intensity $I(\theta)$ is computed at $0^o$ and two further angles (in the computations $40^o$ and $80^o$ are chosen),
-the intermediate values are interpolated by a cubic polynomial (see \chap{app_a_2}).
-After determining the polynomial coefficients:
+The intensity $I(\theta)$ is computed at $\theta_1=0^o, \theta_2=40^o, \theta_3=40^o$.
+The intermediate values are interpolated by a cubic polynomial (see \chap{app_a_2}):
 \begin{align}
-	a_2 &= \dfrac{(F_1 - F_0) \theta_2^3 - (F_2 - F_0) \theta_1^3}{\theta_1^2 \theta_2^3 - \theta_1^3 \theta_2^2} \\
-	a_3 &= \dfrac{(F_2 - F_0) \theta_1^2 - (F_1 - F_0) \theta_2^2}{\theta_1^2 \theta_2^3 - \theta_1^3 \theta_2^2}
+	I(\theta) = I(\theta=0) + a_2 \theta_2^2 + a_3 \theta_3^3
+\end{align}
+The term linear in $\theta$ is zero because of $\dfrac{d T(\theta)}{d\theta}|_{(\theta=\theta_1)} = 0$.
+\newline
+
+The polynomial coefficients can be determined analytically:
+\begin{align}
+	a_2 &= \dfrac{( I(\theta_2) - I(\theta_1) ) \theta_3^3 - (I(\theta_3) - I(\theta_1)) \theta_2^3}{\theta_1^2 \theta_2^3 - \theta_1^3 \theta_2^2} \\
+	a_3 &= \dfrac{( I(\theta_3) - I(\theta_1) ) \theta_2^2 - (I(\theta_2) - I(\theta_1)) \theta_3^2}{\theta_1^2 \theta_2^3 - \theta_1^3 \theta_2^2}
  \end{align}
-the integral is given by:
+With this the integral is given by:
 \begin{align}
-	F(\theta) &= 2 \pi \int_0^{\theta} \left(a_0 + a_2 \theta^2 + a_3 \theta^3\right) \sin(\theta) \cos(\theta)  d \theta d \phi
+	F &= 2 \pi \int_0^{\pi/2} \left(I(0) + a_2 \theta^2 + a_3 \theta^3\right) \sin(\theta) \cos(\theta)  d \theta
 \end{align}
-The contributions of the different polynomial orders assuming constant $I(\theta)$ are:
+The contributions of the different polynomial orders assuming $I(\theta) = 1$ are:
 \begin{align*}
-	 &\int_0^{\theta} \sin(\theta) \cos(\theta) d \theta = 0.5 \\
-	 &\int_0^{\theta} \theta^2 \sin(\theta) \cos(\theta) d \theta = 0.37  \\
-	 &\int_0^{\theta} \theta^3 \sin(\theta) \cos(\theta) d \theta = 0.38
+	 &\int_0^{\pi/2} \sin(\theta) \cos(\theta) d \theta = 0.5 \\
+	 &\int_0^{\pi/2} \theta^2 \sin(\theta) \cos(\theta) d \theta = 0.37  \\
+	 &\int_0^{\pi/2} \theta^3 \sin(\theta) \cos(\theta) d \theta = 0.38
 \end{align*}
 
 \subsection{The HITRAN Data}

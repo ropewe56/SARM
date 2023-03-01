@@ -1,5 +1,7 @@
 HITRAN/
 build/
+radoutput/
 *.synctex.gz
 target/
 Cargo.lock
+*code-workspace

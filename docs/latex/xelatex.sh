@@ -7,7 +7,7 @@ dirname="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 cd $dirname
 
-latex_input=quantum_optics
+latex_input=sarm
 
 outdir=build
 
@@ -21,7 +21,7 @@ fi
 
 echo $latex_cmd
 t1=$(($(date +%s%N)/1000000))
-$latex_cmd -output-directory=$outdir -synctex=1 -interaction=nonstopmode -file-line-error $latex_input # > log/xelatex_stdout.log 2> log/xelatex_stderr.log
+$latex_cmd -output-directory=$outdir -synctex=1 -file-line-error $latex_input # > log/xelatex_stdout.log 2> log/xelatex_stderr.log
 t2=$(($(date +%s%N)/1000000))
 echo `expr $t2 - $t1` ms
 
