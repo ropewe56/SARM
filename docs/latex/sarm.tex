@@ -1,5 +1,5 @@
-
-\documentclass[a4paper,11pt,bibliography=totoc,fleqn,openany,oneside]{scrartcl}
+%\documentclass[a4paper,11pt,bibliography=totoc,fleqn,openany,oneside]{scrartcl}
+\documentclass[a4paper,11pt,fleqn,]{scrartcl}
 
 \usepackage{typearea}
 \usepackage{braket}
@@ -9,13 +9,13 @@
 %\KOMAoption{listof}{entryprefix}
 %\KOMAoption{listof}{chapterentry}
 
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd{\l@part}
-  {2em}  % <search>
-  {4cm}  % <replace>
-  {}{}   % <success><failure>
-\makeatother
+%\usepackage{etoolbox}
+%\makeatletter
+%\patchcmd{\l@part}
+%  {2em}  % <search>
+%  {4cm}  % <replace>
+%  {}{}   % <success><failure>
+%\makeatother
 
 \RedeclareSectionCommand[tocnumwidth=4cm]{part}
 %\usepackage{tocstyle}

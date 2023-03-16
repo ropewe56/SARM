@@ -2,6 +2,7 @@
 
 In the following some results are presented. 
 
+figures
 %TODO
 %\fig{fig:toa1} shows the intensity as a function of the wavelength at TOA computed by the above described model excluding emission.   
 %\begin{figure}[ht]
@@ -55,47 +56,58 @@ In the following some results are presented.
 %\end{figure}
 
 
-In the following table intensity difference values between $400 ppm$ and $800 ppm$ $CO_2$. 
+In the following table intensity differences between $400 \mathrm{ppm}$ and $800 \mathrm{ppm}$  $\mathrm{CO}_2$ 
+in the wavelength interval $13-17$ $\mu m$ are shown. (The total radiation flux to space has to be
+$239 \;W/m^2$)
 \newline
-\newline
-\begin{tabular}{|c |c |c |}
-	\hline
-	$I(400 bpm) - I(800 bpm) \;\; [W/m^2]$ & including emission & number of isotopes \\
-	\hline
-	14.8                                     & yes      &  12         \\
-	15.3                                     & yes      &  1          \\
-	17.4                                     & no       &  1          \\
-	12.1                                     & yes      &  1       \\
-	\hline   
-\end{tabular}  
 
-Flux-diff = $5.0 W/m^2$
+\begin{tabular}{|c |c |c |c |}
+	\hline
+	szenario & $I(400 \mathrm{bpm})\;\; [W/m^2]$ & $I(800 \mathrm{bpm})\;\; [W/m^2]$ & $I(400 \mathrm{bpm}) - I(800 \mathrm{bpm}) \;\; [W/m^2]$ \\
+	\hline
+	1 & 54.7 & 49.7 & 5.04 \\
+	2 & 43.6 & 37.9 & 5.75 \\
+	3 & 39.8 & 34.0 & 5.80 \\
+	\hline
+\end{tabular}
+\begin{itemize}
+\item 1 - with emission, T = T(z)
+\item 2 - without emission, T = T(z)
+\item 3 - without emission, T = const
+\end{itemize}
 
-\section{Estimating the Temperature Increase}
+\subsection{Estimating the Temperature Increase}
 
 
 The power flux from sun to earth outside the atmosphere is (solcar constant):
 \begin{align}
-	SC = 1367 \; \dfrac{W}{m^2}
+	S = 1367 \; \dfrac{W}{m^2}
 \end{align}
-
 The albedo $a$ is approximately $0.3$ so that the necessary mean energy flux 
 to space per $m^2$ of earth surface is:
 \begin{align}
-	F_0 &= (1-a) \dfrac{SC}{4} \\
-	F_0 &=  341.75 \dfrac{W}{m^2}
+	F_0 &= (1-a) \dfrac{S}{4} =  239 \dfrac{W}{m^2}
 \end{align}
-
+The effective radiation temperature is thus:%\cite{Hansen_1984}
 \begin{align}
-	F_0 &= \sigma T^4 \\
-	F_0 + \Delta F &= \sigma (T+ \Delta T)^4 \\
-	\Delta T &= \left(\dfrac{F_0+\Delta F}{\sigma}\right)^{1/4} - T
+	T_e  = \left(\dfrac{F_0}{\sigma}\right)^{1/4}
 \end{align}
-
+To compensate for the reduced flux due to an increaes in $\mathrm{CO}_2$ concentration 
+the effective temperature has to increase. A simple estimate is:
 \begin{align}
-	&(F_0 + \Delta F) = \sigma T^4 \left(1 + 4 \dfrac{\Delta T}{T}\right) \\
-	&\dfrac{(F_0 + \Delta F)}{\sigma T^4} =\left(1 + 4 \dfrac{\Delta T}{T}\right) \\
-	&\Delta T = \left(\dfrac{(F_0 + \Delta F)}{\sigma T^4} - 1\right) \dfrac{T}{4}
+	F_0 + \Delta F &= \sigma (T_e + \Delta T)^4 \\
+	\Delta T &= \left(\dfrac{F_0+\Delta F}{\sigma}\right)^{1/4} - T_e
 \end{align}
+which yields:
+\begin{align}
+	\Delta T &= \left(\dfrac{F_0+\Delta F}{\sigma}\right)^{1/4} - T_e
+\end{align}
+With $\Delta F = 5 W/m^2$ it follows $\Delta T = 1.33 \;K$
 
-$\sigma = 5.670374419 \; 10^{-8} \dfrac{W}{ m^2  K^4}$
+%\begin{align}
+%	&(F_0 + \Delta F) = \sigma T^4 \left(1 + 4 \dfrac{\Delta T}{T}\right) \\
+%	&\dfrac{(F_0 + \Delta F)}{\sigma T^4} =\left(1 + 4 \dfrac{\Delta T}{T}\right) \\
+%	&\Delta T = \left(\dfrac{(F_0 + \Delta F)}{\sigma T^4} - 1\right) \dfrac{T}{4}
+%\end{align}
+%
+%$\sigma = 5.670374419 \; 10^{-8} \dfrac{W}{ m^2  K^4}$
