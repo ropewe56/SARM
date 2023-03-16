@@ -21,10 +21,13 @@ fi
 
 echo $latex_cmd
 t1=$(($(date +%s%N)/1000000))
+
 $latex_cmd -output-directory=$outdir -synctex=1 -file-line-error $latex_input # > log/xelatex_stdout.log 2> log/xelatex_stderr.log
+
 t2=$(($(date +%s%N)/1000000))
 echo `expr $t2 - $t1` ms
 
+cp $dirname/build/*.pdf $dirname
 echo "end"
 
 

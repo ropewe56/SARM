@@ -9,22 +9,44 @@ function Results(N::Int64)
     Results(data)
 end
 
+"""
+    add_results(res::Results, dλ, z, NCO2, θ, T, N, ΔλL_mean, ΔλD_mean, I_λ, vϵ, vκ, vIκ)
+
+    add data at z
+
+    dλ        - wavelength spacing
+    z         - z
+    NCO2      - CO2 concentration
+    θ         - angle
+    T         - temperature
+    N         - gas density
+    ΔλL_mean  -
+    ΔλD_mean  -
+    I_λ       - Vector of spectral intensity
+    vϵ        - Vector of spectral emission
+    vκ        - Vector of spectral absorption
+    vIκ       - Vector of spectral intensity x spectral absorption
+"""
 function add_results(res::Results, dλ, z, NCO2, θ, T, N, ΔλL_mean, ΔλD_mean, I_λ, vϵ, vκ, vIκ)
-    nl = length(I_λ)
+    nλ     = length(I_λ)
+
+    # integrate over all wavelengths
     int_I  = sum(I_λ)*dλ
     int_ϵ  = sum(vϵ)*dλ
     int_κ  = Statistics.mean(vκ)
     int_Iκ = sum(vIκ)*dλ
 
-    n1 = floor(Int64, nl/6)
-    n2 = nl-n1
+    # integrate over nλ/6,...,nλ-nλ/6  wavelengths
+    n1 = floor(Int64, nλ/6)
+    n2 = nλ-n1
     int_I1  = sum(I_λ[n1:n2])*dλ
     int_ϵ1  = sum(vϵ[n1:n2])*dλ
     int_κ1  = Statistics.mean(vκ[n1:n2])
     int_Iκ1 = sum(vIκ[n1:n2])*dλ
 
-    n1 = floor(Int64, nl/4)
-    n2 = nl-n1
+    # integrate over nλ/4,...,nλ-nλ/4  wavelengths
+    n1 = floor(Int64, nλ/4)
+    n2 = nλ-n1
     int_I2  = sum(I_λ[n1:n2])*dλ
     int_ϵ2  = sum(vϵ[n1:n2])*dλ
     int_κ2  = Statistics.mean(vκ[n1:n2])

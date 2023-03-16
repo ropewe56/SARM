@@ -5,6 +5,8 @@ pygui(:qt5)
 using Common
 using PhysConst
 
+# plot intensities intensity/intensity.*.hdf5, spectrum, spectrum/spectrum.*.hdf5
+
 function plot_lines()
     input_file = joinpath(@__DIR__, "CO2.hdf5")
     group_name, dataset_name = "CO2", "data"
@@ -58,7 +60,7 @@ function compose_path(path)
     joinpath(path[1], string(path[2], path[3]))
 end
 
-function plot_intensity_over_wavelength(ifig, planck_path, planck_intensity_part, path, int_nb, istart)
+function plot_intensity_over_wavelength(ifig, dirpath, planck_path, planck_intensity_part, path, int_nb, istart)
     group_name, dataset_name = "A", "A"
 
     lIPlanck = load_array_as_hdf5(compose_path(planck_path), group="A", dataset="A")
@@ -70,7 +72,7 @@ function plot_intensity_over_wavelength(ifig, planck_path, planck_intensity_part
     plot(lI[1,:]*1.0e6, lI[2,:], "b")
     xlabel("λ [μm]")
     ylabel("I_λ [W/m^2/sr/m]")
-    pngdir = joinpath(path[1], "png", "I", "noplanck")
+    pngdir = joinpath(dirpath, "intensity_png", "noplanck")
     mkpath(pngdir)
     png_path = joinpath(pngdir, @sprintf("%03d_%s_I_wl.png", int_nb, path[2]))
     savefig(png_path)
@@ -81,7 +83,7 @@ function plot_intensity_over_wavelength(ifig, planck_path, planck_intensity_part
     plot(lIPlanck[1,:]*1.0e6, lIPlanck[2,:], "r")
     xlabel("λ [μm]")
     ylabel("I_λ [W/m^2/sr/m]")
-    pngdir = joinpath(path[1], "png", "I", "planck_1")
+    pngdir = joinpath(dirpath, "intensity_png", "planck_1")
     mkpath(pngdir)
     png_path = joinpath(pngdir, @sprintf("%03d_%s_I_wl.png", int_nb, path[2]))
     savefig(png_path)
@@ -96,7 +98,7 @@ function plot_intensity_over_wavelength(ifig, planck_path, planck_intensity_part
     end
     xlabel("λ [μm]")
     ylabel("I_λ [W/m^2/sr/m]")
-    pngdir = joinpath(path[1], "png", "I", "planck_2")
+    pngdir = joinpath(dirpath, "intensity_png", "planck_2")
     mkpath(pngdir)
     png_path = joinpath(pngdir, @sprintf("%03d_%s_I_wl.png", int_nb, path[2]))
     savefig(png_path)
@@ -105,7 +107,7 @@ function plot_intensity_over_wavelength(ifig, planck_path, planck_intensity_part
     istart
 end
 
-function plot_spectrum_over_wavelength(ifig1, ifig2, path, i)
+function plot_spectrum_over_wavelength(ifig1, ifig2, dirpath, path, i)
     group_name, dataset_name = "conv", "conv"
     hdf5path = joinpath(path[1], string(path[2], path[3]))
     @infoe hdf5path
@@ -115,7 +117,7 @@ function plot_spectrum_over_wavelength(ifig1, ifig2, path, i)
     κ = wl[2,:]        # 1/m
     ϵ = wl[3,:]        # W / m^3 / sr / m
 
-    pngdir = joinpath(path[1], "png", "S")
+    pngdir = joinpath(dirpath, "spectrum_png")
     mkpath(pngdir)
     pngpath = joinpath(pngdir, @sprintf("%03d_%s_conv_kap.png", i, path[2]))
     #@infoe @sprintf("%s  %s", size(wl), pngpath)
@@ -234,17 +236,19 @@ function go(subdir)
 
     istart = 0
     for d in subsubdirs
-        spectrum, intensity, moving_average_k, planck_intensity, planck_intensity_part = get_all_files_by_extension(joinpath(out_root, subdir, d), ".hdf5")
+        dirpath = joinpath(out_root, subdir, d)
+        spectrum, intensity, moving_average_k, planck_intensity, planck_intensity_part = get_all_files_by_extension(dirpath, ".hdf5")
         @infoe planck_intensity_part
         if !(intensity === nothing) && !(planck_intensity === nothing)
             n = size(intensity,1)
             for int_nb in 1:n
-                istart = plot_intensity_over_wavelength(3, planck_intensity, planck_intensity_part, intensity[int_nb], int_nb, istart)
-                plot_spectrum_over_wavelength(1, 2, spectrum[int_nb], int_nb)
+                istart = plot_intensity_over_wavelength(3, dirpath, planck_intensity, planck_intensity_part, intensity[int_nb], int_nb, istart)
+                plot_spectrum_over_wavelength(1, 2, dirpath, spectrum[int_nb], int_nb)
             end
         end
     end
 end
-subdir = "A"
+
+subdir = "C"
 go(subdir)
 

@@ -62,3 +62,25 @@ $\epsilon_{line} =  \dfrac{1}{4 \pi} h ν A_{ki} N_k  \left[\dfrac{J}{s m^3}\rig
    * density
    * pressure
    * CO2 concentration
+
+
+# Temperatur Increase
+
+$σ = 5.670374419 \; 10^{-8} \dfrac{W}{ m^2  K^4}$
+
+
+$F_0 = \dfrac{1367.0}{4} \dfrac{W}{m^2} = 341.75 \dfrac{W}{m^2}$
+
+$F_0 = σ T^4$
+
+$T = \left(\dfrac{F_0}{σ}\right)^{1/4}$
+
+$F = \sigma T^4 \left(1 + 4 \dfrac{\Delta T}{T}\right)$
+
+$F = F_0 \left(1 + 4 \dfrac{\Delta T}{T}\right)$
+
+$\Delta T = \dfrac{\Delta F}{F_0} \dfrac{T}{4}$
+
+$\Delta F = 6 \dfrac{W}{m^2}$
+
+$\Delta T = 1.22 K$

@@ -1,7 +1,7 @@
 module SimpleRadTrans
 
-include("create_QTp_lines_files.jl")
-include("create_Nthetaz_json_files.jl")
+include("create_input/create_QTp_lines_files.jl")
+include("create_input/create_Nthetaz_json_files.jl")
 
 include("parameter.jl")
 include("profiles.jl")

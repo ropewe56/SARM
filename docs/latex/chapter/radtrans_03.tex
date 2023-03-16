@@ -68,3 +68,34 @@ In the following table intensity difference values between $400 ppm$ and $800 pp
 	12.1                                     & yes      &  1       \\
 	\hline   
 \end{tabular}  
+
+Flux-diff = $5.0 W/m^2$
+
+\section{Estimating the Temperature Increase}
+
+
+The power flux from sun to earth outside the atmosphere is (solcar constant):
+\begin{align}
+	SC = 1367 \; \dfrac{W}{m^2}
+\end{align}
+
+The albedo $a$ is approximately $0.3$ so that the necessary mean energy flux 
+to space per $m^2$ of earth surface is:
+\begin{align}
+	F_0 &= (1-a) \dfrac{SC}{4} \\
+	F_0 &=  341.75 \dfrac{W}{m^2}
+\end{align}
+
+\begin{align}
+	F_0 &= \sigma T^4 \\
+	F_0 + \Delta F &= \sigma (T+ \Delta T)^4 \\
+	\Delta T &= \left(\dfrac{F_0+\Delta F}{\sigma}\right)^{1/4} - T
+\end{align}
+
+\begin{align}
+	&(F_0 + \Delta F) = \sigma T^4 \left(1 + 4 \dfrac{\Delta T}{T}\right) \\
+	&\dfrac{(F_0 + \Delta F)}{\sigma T^4} =\left(1 + 4 \dfrac{\Delta T}{T}\right) \\
+	&\Delta T = \left(\dfrac{(F_0 + \Delta F)}{\sigma T^4} - 1\right) \dfrac{T}{4}
+\end{align}
+
+$\sigma = 5.670374419 \; 10^{-8} \dfrac{W}{ m^2  K^4}$

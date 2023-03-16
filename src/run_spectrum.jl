@@ -4,8 +4,8 @@ using PyPlot
 pygui(true)
 pygui(:qt5)
 
-include("create_QTp_lines_files.jl")
-include("create_Nthetaz_json_files.jl")
+include("create_input/create_QTp_lines_files.jl")
+include("create_input/create_Nthetaz_json_files.jl")
 
 include("interpolator.jl")
 include("parameter.jl")
@@ -126,7 +126,8 @@ function get_directory_paths()
     input_dir = joinpath(radtrans_root, "radinput")
     out_root  = joinpath(radtrans_root, "radoutput")
     mkpath(input_dir)
-    mkpath(out_root)
+    mkpath(joinpath(out_root, "intensity"))
+    mkpath(joinpath(out_root, "spectrum"))
     data_dir, input_dir, out_root
 end
 

@@ -434,11 +434,11 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
             znext = spec.z[istep] + Δz
 
             Iname = @sprintf("intensity_%03d_%03d_%d_%d_%5.3e", outid, istep, iN, iθ, spec.z[istep])
-            save_intensity_as_hdf5(joinpath(spec.par.out_dir, Iname), spec.λ, I_λ)
+            fname = joinpath(spec.par.out_dir, "intensity", Iname)
+            save_intensity_as_hdf5(fname, spec.λ, I_λ)
 
             cname = @sprintf("spectrum_%03d_%03d_%d_%d_%5.3e", outid, istep, iN, iθ, spec.z[istep])
-            fname = joinpath(spec.par.out_dir, cname)
-            @infoe fname
+            fname = joinpath(spec.par.out_dir, "spectrum", cname)
             save_spectrum_as_hdf5(fname, spec)
         end
 
