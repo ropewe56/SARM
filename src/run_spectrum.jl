@@ -1,5 +1,7 @@
 using Common
 using PhysConst
+using OrderedDict
+
 using PyPlot
 pygui(true)
 pygui(:qt5)
@@ -94,8 +96,8 @@ Input parameter:
         bg: background added to the absorption and emission coefficients because of the cut off of Lorentz shape contributions
         Δλ: wavelength resolution
 """
-input_run_parameter = Dict(
-    "fixed_parameter" => Dict(
+input_run_parameter = OrderedDict(
+    "fixed_parameter" => OrderedDict(
         "λmin"      => 1.2e-5,
         "λmax"      => 1.8e-5,
         "Δλ_factor" => 20.0,       # relative width of the line shapes
@@ -107,16 +109,14 @@ input_run_parameter = Dict(
         "T_surface" => 288.0,
         "Planck_Ts" => [200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 250.0, 260.0, 270.0, 280.0, 288.0],
     ),
-    "npy_parameter" => Dict(
-        "NCO2"      => [400.0*1.0e-6, 800.0*1.0e-6],
+    "npy_parameter" => OrderedDict(
+        "NCO2"      => [278.0, 420.99, 420.99*2.0] .* 1.0e-6,
         "theta_deg" => [0.0, 40.0, 80.0],
         "z"         => Dict("zmin"=> 0.0, "zmax"=> 7.0e4, "dzmin"=> 10.0, "dzmax"=> 1.0e3, "n" => 200,  "exponent" => 1),
     ),
     "loop_parameter" => [
-        Dict("T_of_h" => true,  "N_of_h" => true, "with_emission" => true,  "albedo" => 0.0, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "zero"),
-        Dict("T_of_h" => true,  "N_of_h" => true, "with_emission" => true,  "albedo" => 0.0, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "planck"),
-        Dict("T_of_h" => true,  "N_of_h" => true, "with_emission" => false, "albedo" => 0.0, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "planck"),
-        Dict("T_of_h" => false, "N_of_h" => true, "with_emission" => false, "albedo" => 0.0, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "planck"),
+        OrderedDict("T_of_h" => true,  "N_of_h" => true, "with_emission" => true,  "albedo" => 0.3, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "planck"),
+        OrderedDict("T_of_h" => true,  "N_of_h" => true, "with_emission" => false, "albedo" => 0.3, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "planck"),
     ])
 
 function get_directory_paths()
