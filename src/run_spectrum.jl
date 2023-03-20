@@ -1,6 +1,6 @@
 using Common
 using PhysConst
-using OrderedDict
+using DataStructures
 
 using PyPlot
 pygui(true)
@@ -119,9 +119,7 @@ input_run_parameter = OrderedDict(
         OrderedDict("T_of_h" => true,  "N_of_h" => true, "with_emission" => false, "albedo" => 0.3, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "planck"),
     ])
 
-function get_directory_paths()
-    radtrans_root = dirname(@__DIR__)
-    radtrans_root = "/home/wester/Projects/Julia/Private/SimpleRadTrans.jl"
+function get_directory_paths(radtrans_root)
     data_dir  = joinpath(radtrans_root, "HITRAN")
     input_dir = joinpath(radtrans_root, "radinput")
     out_root  = joinpath(radtrans_root, "radoutput")
@@ -145,12 +143,13 @@ function run_radition_transfer_rust(json_file_paths, rust_exe)
     end
 end
 
-data_dir, input_dir, output_root = get_directory_paths()
-json_file_paths = create_parameter_json(input_dir, output_root, "C", input_run_parameter)
+data_dir, input_dir, output_root = get_directory_paths(dirname(@__DIR__))
+json_file_paths = create_parameter_json(input_dir, output_root, "D", input_run_parameter)
+create_data_files(data_dir, input_dir)
 
-#run_radition_transfer(json_file_paths)
+run_radition_transfer(json_file_paths)
 
-rust_exe = "/home/wester/Projects/GitHub/SARM/rust/rust/target/debug/sarm"
-run_radition_transfer_rust(json_file_paths, rust_exe)
+#rust_exe = "/home/wester/Projects/GitHub/SARM/rust/rust/target/debug/sarm"
+#run_radition_transfer_rust(json_file_paths, rust_exe)
 
 

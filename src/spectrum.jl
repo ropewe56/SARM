@@ -467,6 +467,7 @@ function integrate(spec::Spectrum)
     λ2 = 1.0e-4
     nλ = 1000
     T = spec.par.T_surface
+    mkpath(spec.par.out_dir)
     compute_and_save_planck(joinpath(spec.par.out_dir, "planck_intensity"), λ1, λ2, nλ, T)
     compute_and_save_planck(joinpath(spec.par.out_dir, "planck_intensity_part"), spec.λ[1], spec.λ[end], size(spec.λ,1), spec.par.Planck_Ts)
 

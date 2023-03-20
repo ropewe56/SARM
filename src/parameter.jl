@@ -65,6 +65,9 @@ function Parameter(parameter_json_file)
     z_path              = json["paths"]["z_path"]
     z_iout              = json["paths"]["z_iout"]
 
+    mkpath(joinpath(out_dir, "intensity"))
+    mkpath(joinpath(out_dir, "spectrum"))
+
     Parameter(  mCO2              ,
                 λmin              ,
                 λmax              ,

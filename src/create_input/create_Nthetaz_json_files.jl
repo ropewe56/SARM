@@ -19,7 +19,7 @@ function get_paths_dict(input_dir, out_dir)
             "infofile"     => "info.log",
             "NCO2_path"    => joinpath(input_dir, "NCO2.npy" ),
             "theta_path"   => joinpath(input_dir, "theta_deg.npy"),
-            "specdat_path" => joinpath(input_dir, "CO2_rwfmt_ISO-0-12_wl-12-18-mum.npy"),
+            "specdat_path" => joinpath(data_dir, "CO2_rwfmt_ISO-0-12_wl-12-18-mum.npy"),
             "T_Q_path"     => joinpath(input_dir, "T_Q.npy"  ),
             "h_p_path"     => joinpath(input_dir, "h_p.npy"  ),
             "h_T_path"     => joinpath(input_dir, "h_T.npy"  ),
