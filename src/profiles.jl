@@ -1,5 +1,6 @@
-using Common
-using PhysConst
+using RWPhysConst
+using RWUtils
+
 struct GaussProfile
     Δλ0  :: Float64
     ln2  :: Float64
