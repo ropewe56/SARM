@@ -1,5 +1,7 @@
-using Common
-using PhysConst
+using RWUtils
+using RWLogger
+using RWPhysConst
+
 using DataStructures
 
 using PyPlot
@@ -119,10 +121,10 @@ input_run_parameter = OrderedDict(
         OrderedDict("T_of_h" => true,  "N_of_h" => true, "with_emission" => false, "albedo" => 0.3, "max_isotope_id" =>  11, "back_ground"=> 0.0, "Δλ" => 1.0e-11, "initial_intensity" => "planck"),
     ])
 
-function get_directory_paths(radtrans_root)
-    data_dir  = joinpath(radtrans_root, "HITRAN")
-    input_dir = joinpath(radtrans_root, "radinput")
-    out_root  = joinpath(radtrans_root, "radoutput")
+function get_directory_paths(sarm_root)
+    data_dir  = joinpath(sarm_root, "data")
+    input_dir = joinpath(sarm_root, "radinput")
+    out_root  = joinpath(sarm_root, "radoutput")
     mkpath(input_dir)
     mkpath(joinpath(out_root, "intensity"))
     mkpath(joinpath(out_root, "spectrum"))

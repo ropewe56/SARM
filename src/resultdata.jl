@@ -1,4 +1,3 @@
-using Common
 using StaticArrays
 
 mutable struct Results{N}

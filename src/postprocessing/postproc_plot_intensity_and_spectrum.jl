@@ -3,7 +3,7 @@ pygui(false)
 pygui(:qt5)
 
 using Common
-using PhysConst
+using RWPhysConst
 
 # plot intensities intensity/intensity.*.hdf5, spectrum, spectrum/spectrum.*.hdf5
 

@@ -1,4 +1,4 @@
-using Common
+using RWFileIO
 
 """
     Save wavelength and intensity to npy file

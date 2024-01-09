@@ -1,9 +1,6 @@
-using Common
+using RWLogger
+using RWFileIO
 using JSON
-
-using PyPlot
-pygui(true)
-pygui(:qt5)
 
 export get_parameter_and_create_json
 

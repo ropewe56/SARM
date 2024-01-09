@@ -1,8 +1,10 @@
 import Statistics
 using StaticArrays
+using CPUTime
 
-using Common
-using PhysConst
+using RWFileIO
+using RWPhysConst
+
 mutable struct Spectrum
     line_data   :: LineData
     T_ref       :: Float64          # reference temperature
@@ -259,7 +261,7 @@ function sum_over_lines(spec::Spectrum, T, N)
         if λ_ul >= λ_1 && λ_ul <= λ_2
             iλ0 = floor(Int64, (λ_ul - λ_1) / Δλ * Float64(nb_λ-1) )
 
-            gauss = GaussProfile(ldc[i_iso_m, iline], T)
+            gauss = GaussProfile(ldc[i_iso_m, iline], T, λ_ul)
             lorentz = LorentzProfile(ldv[i_ΔλL, iline])
 
             diλ = max(2, floor(Int64, (ldv[i_ΔλL, iline] + ldv[i_ΔλG, iline]) * spec.par.Δλ_factor / dλ))
@@ -391,7 +393,7 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
 
     @time begin
     for istep in 1:nb_zsteps
-
+        t1 = CPUtime_us()
         # pressure, temperature and density at height = z
         p = y_at(spec.p_vs_h, spec.z[istep])
         T = y_at(spec.t_vs_h, spec.z[istep])
@@ -411,12 +413,17 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
             Nmin = N
         end
 
+        t2 = CPUtime_us()
+    
         # compute the line coefficients
         (ΔλL_mean, ΔλD_mean) = compute_emission_and_absorption(spec, T, N, p, NCO2)
+        t3 = CPUtime_us()
 
         sum_over_lines(spec, T, N)
+        t4 = CPUtime_us()
 
         add_background()
+        t5 = CPUtime_us()
 
         # step size Δs = z/cos(θ)
         Δs = 1.0
@@ -428,6 +435,7 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
 
         vϵ, vκ, vIκ = integrate_over_lines(nb_λ, I_λ, spec.κ_c, spec.ϵ_c, Δs, spec.par.with_emission, κds_limit)
         #@infoe I_λ[div(nb_λ,2)], sum(I_λ)
+        t6 = CPUtime_us()
 
         # save intensity and spectrum
         if spec.z_iout[istep] == 1
@@ -441,6 +449,7 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
             fname = joinpath(spec.par.out_dir, "spectrum", cname)
             save_spectrum_as_hdf5(fname, spec)
         end
+        t7 = CPUtime_us()
 
         # add results
         if istep == 1
@@ -454,6 +463,14 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
         write(spec.logfile, out * "\n")
         flush(spec.logfile)
         @infoe out
+        t8 = CPUtime_us()
+        
+        ts = [t1, t2, t3, t4, t5, t6, t7, t8]
+        str = []
+        for i in eachindex(ts[1:end-1])
+            push!(str, @sprintf("%d:%8.2e", i, ts[i+1] - ts[i]))
+        end
+        @infoe join(str, ", ")
     end  # lop over z istep
     end # @time
 
@@ -498,7 +515,7 @@ function integrate(spec::Spectrum)
             @infoe out
 
             # integrate along path
-            result_data = integrate_along_path(spec, outid, iN, iθ, NCO2, θ)
+            @time result_data = integrate_along_path(spec, outid, iN, iθ, NCO2, θ)
 
             # save result_data
             write_result_data(result_data, fname)

@@ -1,11 +1,13 @@
 using QuadGK
 using JSON
-using PyPlot
-pygui(true)
-pygui(:qt5)
 
-using Common
-using PhysConst
+import PyPlot as plt
+function pyplot_gui(plt)
+    plt.pygui(true)
+    plt.pygui(:qt5)
+end
+
+using RWPhysConst
 
 """
     Read all result data from the log.log files

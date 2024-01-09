@@ -4,4 +4,4 @@ julia --math-mode=fast -O3 --check-bounds=no --inline=yes --threads 16 run_spect
 
 # top : show processes
 # top -H  : show threads
-# top -H -p <pid> . theraeds of process <pid>
+# top -H -p <pid> . threads of process <pid>
