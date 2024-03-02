@@ -13,6 +13,7 @@ Pkg.add("QuadGK")
 Pkg.add("SARM")
 Pkg.add("StaticArrays")
 Pkg.add("StatsBase")
- 
+Pkg.add("Statistics")
+
 Pkg.add(url="/home/wester/Projects/Julia/Packages/CommonUtils")
 Pkg.add(url="/home/wester/Projects/Julia/Packages/PhysConst")
