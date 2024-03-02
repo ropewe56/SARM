@@ -2,8 +2,8 @@ import Statistics
 using StaticArrays
 using CPUTime
 
-using RWFileIO
-using RWPhysConst
+using PhysConst
+using CommonUtils
 
 mutable struct Spectrum
     line_data   :: LineData

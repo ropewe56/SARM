@@ -1,0 +1,20 @@
+name = "SARM"
+uuid = "ecd5e4cd-8aea-4c86-80da-b429fd357b63"
+authors = ["wester <rolf.wester@mailbox.org>"]
+version = "0.1.0"
+
+[deps]
+CPUTime = "a9c8d775-2e2e-55fc-8582-045d282d599e"
+CommonUtils = "9b48094e-b81c-47ea-8691-3f94b6338e7e"
+DataInterpolations = "82cc6244-b520-54b8-b5a6-8a565e85f1d0"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+PhysConst = "5fb906b7-6b74-4262-a47b-bfc7830f13d6"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"

@@ -7,7 +7,7 @@ function pyplot_gui(plt)
     plt.pygui(:qt5)
 end
 
-using RWPhysConst
+using PhysConst
 
 """
     Read all result data from the log.log files

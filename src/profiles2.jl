@@ -1,6 +1,5 @@
-using RWPhysConst
-using RWUtils
-using RWFileIO
+using PhysConst
+using CommonUtils
 using StaticArrays
 
 function GaussProfile(M::Float64, T::Float64, λ0::Float64)

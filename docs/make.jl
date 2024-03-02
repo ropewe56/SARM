@@ -1,8 +1,7 @@
 using Documenter
-using Utils
 
 println(LOAD_PATH)
-using SimpleRadTrans
+using SARM
 
 mathengine = Documenter.Writers.HTMLWriter.KaTeX()
 #mathengine = Documenter.Writers.HTMLWriter.MathJax2()
