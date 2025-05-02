@@ -8,3 +8,4 @@ Cargo.lock
 *code-workspace
 __pycache__
 *.hdf5
+Manifest.toml
