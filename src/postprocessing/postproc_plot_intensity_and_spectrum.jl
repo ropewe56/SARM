@@ -2,7 +2,7 @@ using PyPlot
 pygui(false)
 pygui(:qt5)
 
-using CommonUtils
+using SimpleLog
 using PhysConst
 
 # plot intensities intensity/intensity.*.hdf5, spectrum, spectrum/spectrum.*.hdf5

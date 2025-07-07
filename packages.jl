@@ -1,8 +1,12 @@
 using Pkg
 
+Pkg.add(url="/home/wester/Projects/Julia/Utilities/SimpleLog.jl")
+Pkg.add(url="/home/wester/Projects/Julia/Physics/PhysConst.jl")
+
 Pkg.add("CPUTime")
 Pkg.add("DataInterpolations")
 Pkg.add("DataStructures")
+Pkg.add("DataFrames")
 Pkg.add("DelimitedFiles")
 Pkg.add("Documenter")
 Pkg.add("HDF5")
@@ -15,5 +19,3 @@ Pkg.add("StaticArrays")
 Pkg.add("StatsBase")
 Pkg.add("Statistics")
 
-Pkg.add(url="/home/wester/Projects/Julia/Packages/CommonUtils")
-Pkg.add(url="/home/wester/Projects/Julia/Packages/PhysConst")

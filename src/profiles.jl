@@ -1,5 +1,5 @@
 using PhysConst
-using CommonUtils
+using SimpleLog
 
 struct GaussProfile
     Δλ0  :: Float64

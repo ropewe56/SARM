@@ -1,8 +1,15 @@
 using DelimitedFiles
 using PhysConst
-using CommonUtils
+using SimpleLog
 using Printf
 using DataInterpolations
+using DataFrames
+using CSV
+
+#using Arrow
+#open(joinpath(datdir, splitext(path)[1] * ".arrow"), "w") do io
+#    Arrow.write(io, df)
+#end
 
 """
     unused
@@ -27,16 +34,54 @@ function lines_to_matrix(lines)
     end
     B
 end
+
 """
-    unused
+    load_out_file(datdir, path; nh=0)
+    loads a HITRAN *.out file and stores the data in a *csv file
 """
-function load_txt_file(path; nh=0)
-    ein = open(path, "r")
-    lines = split(read(ein, String), "\n")[nh+1:end]
-    close(ein)
-    lines_to_matrix(lines)
+function load_txt_file(datdir, path; nh=0)
+    lines = open(joinpath(datdir, path), "r") do io
+        split(read(io, String), "\n")[nh+1:end]
+    end
+
+    header = split(lines[1],",")
+    n = length(header)
+    m = length(lines[2:end])
+
+    dat = Matrix{Float64}(undef, m, n-2)
+    mid = Matrix{Int64}(undef, m, 2)
+    
+    for (j,line) in enumerate(lines[2:end])
+        spline = split(line, ",")
+        mid[j,1] = parse(Int64, spline[1])
+        mid[j,2] = parse(Int64, spline[2])
+        
+        for (i,a) in enumerate(spline[3:end])
+            if length(a) > 0
+                dat[j,i] = parse(Float64, a)
+            end
+        end
+    end
+
+    df = DataFrame( molec_id     = mid[:,1],
+                    local_iso_id = mid[:,2],                
+                    nu           = dat[:,1],      
+                    sw           = dat[:,2],      
+                    a            = dat[:,3],     
+                    gamma_air    = dat[:,4],             
+                    gamma_self   = dat[:,5],              
+                    elower       = dat[:,6],          
+                    n_air        = dat[:,7],         
+                    delta_air    = dat[:,8],             
+                    gp           = dat[:,9],      
+                    gpp          = dat[:,10])  
+
+    CSV.write(joinpath(datdir, splitext(path)[1] * ".csv"), df)
 end
 
+datdir = "/home/wester/Projects/Julia/Climate-Energy/SARM/data"
+path   = "H2O_rwfmt_ISO-0-1.out"
+@time load_txt_file(datdir, path; nh=0)
 
 """
     Interpolate data onto a equidistant grid with n grid points
@@ -69,21 +114,10 @@ function interpolate(x0, y0, n)
     x, y
 end
 
-"""
-    Create lokup tables for the CO2 partition functions
-
-    https://hitran.org/docs/iso-meta/
-    global ID 	local ID 	Formula 	AFGL code 	Abundance 	        Molar Mass /g·mol-1 	Q(296 K) 	Q (full range) 	gi
-    7 	        1 	        12C16O2 	626 	    0.984204 	        43.98983 	            286.09 	    q7.txt 	        1
-
-    CO2_Q_dir -- directory where T, Q values (HITRAN data) are
-    n  -- number of T,Q pairs to make
-    returns T, Q -- [description]
-"""
-function make_lookup_for_Q(CO2_Q_dir; Tmax=300.0)
-    ein = open(joinpath(CO2_Q_dir, "q7-q122-description.txt"), "r")
-    lines = split(read(ein, String), "\n")
-    close(ein)
+function load_description_file(datdir)
+    lines = open(joinpath(datdir, "CO2_Q", "q7-q122-description.txt"), "r") do io
+        split(read(io, String), "\n")
+    end
 
     paths      = []
     isotope_id = []
@@ -108,12 +142,28 @@ function make_lookup_for_Q(CO2_Q_dir; Tmax=300.0)
             push!(isotope_m, mass)
         end
     end
+    paths, isotope_id, isotope_c, isotope_m, gis       
+end
+
+"""
+    Create lokup tables for the CO2 partition functions
+
+    https://hitran.org/docs/iso-meta/
+    global ID 	local ID 	Formula 	AFGL code 	Abundance 	        Molar Mass /g·mol-1 	Q(296 K) 	Q (full range) 	gi
+    7 	        1 	        12C16O2 	626 	    0.984204 	        43.98983 	            286.09 	    q7.txt 	        1
+
+    CO2_Q_dir -- directory where T, Q values (HITRAN data) are
+    n  -- number of T,Q pairs to make
+    returns T, Q -- [description]
+"""
+function make_lookup_for_Q(datdir; Tmax=300.0)
+    paths, isotope_id, isotope_c, isotope_m, gis = load_description_file(datdir)
 
     T = []
     Q = []
     # read the partition function files
     for path in paths
-        lines = readlines(joinpath(CO2_Q_dir, path))
+        lines = readlines(joinpath(datdir, "CO2_Q", path))
 
         TQ = Matrix{Float64}(undef, 2, size(lines,1))
         for (i,line) in enumerate(lines)

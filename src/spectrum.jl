@@ -3,7 +3,7 @@ using StaticArrays
 using CPUTime
 
 using PhysConst
-using CommonUtils
+using SimpleLog
 
 mutable struct Spectrum
     line_data   :: LineData

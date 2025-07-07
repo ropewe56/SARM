@@ -1,4 +1,4 @@
-using CommonUtils
+using SimpleLog
 
 """
     Save wavelength and intensity to npy file
