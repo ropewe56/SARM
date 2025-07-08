@@ -1,4 +1,4 @@
-using DelimitedFiles
+#using DelimitedFiles
 using PhysConst
 using SimpleLog
 using Printf
@@ -6,82 +6,15 @@ using DataInterpolations
 using DataFrames
 using CSV
 
-#using Arrow
-#open(joinpath(datdir, splitext(path)[1] * ".arrow"), "w") do io
-#    Arrow.write(io, df)
-#end
 
-"""
-    unused
-"""
-function lines_to_matrix(lines)
-    n = size(lines,1)
-    A = []
-    vmax = 0
-    for i in 1:n
-        sp = split(lines[i])
-        for s in sp
-            push!(v, parse(Float64, s))
-        end
-        push!(A,v)
-        vmax = max(vmax, size(v, 1))
-    end
-    B = Matrix{Float64}(undef, vmax, n)
-    for j in 1:n
-        for i in 1:size(A[i],1)
-            B[i,j] = A[i][j]
-        end
-    end
-    B
-end
+datadir = "/home/wester/Projects/Julia/Climate-Energy/SARM/data"
+opath = "H2O_rwfmt_ISO-0-1.out"
+qpath = joinpath("CO2_Q", "CO2_q7-q122.txt")
 
-"""
-    load_out_file(datdir, path; nh=0)
-    loads a HITRAN *.out file and stores the data in a *csv file
-"""
-function load_txt_file(datdir, path; nh=0)
-    lines = open(joinpath(datdir, path), "r") do io
-        split(read(io, String), "\n")[nh+1:end]
-    end
+CSV.read(joinpath(datadir,opath), DataFrame)
+CSV.read(joinpath(datadir,qpath), DataFrame, header=1)
 
-    header = split(lines[1],",")
-    n = length(header)
-    m = length(lines[2:end])
-
-    dat = Matrix{Float64}(undef, m, n-2)
-    mid = Matrix{Int64}(undef, m, 2)
-    
-    for (j,line) in enumerate(lines[2:end])
-        spline = split(line, ",")
-        mid[j,1] = parse(Int64, spline[1])
-        mid[j,2] = parse(Int64, spline[2])
-        
-        for (i,a) in enumerate(spline[3:end])
-            if length(a) > 0
-                dat[j,i] = parse(Float64, a)
-            end
-        end
-    end
-
-    df = DataFrame( molec_id     = mid[:,1],
-                    local_iso_id = mid[:,2],                
-                    nu           = dat[:,1],      
-                    sw           = dat[:,2],      
-                    a            = dat[:,3],     
-                    gamma_air    = dat[:,4],             
-                    gamma_self   = dat[:,5],              
-                    elower       = dat[:,6],          
-                    n_air        = dat[:,7],         
-                    delta_air    = dat[:,8],             
-                    gp           = dat[:,9],      
-                    gpp          = dat[:,10])  
-
-    CSV.write(joinpath(datdir, splitext(path)[1] * ".csv"), df)
-end
-
-datdir = "/home/wester/Projects/Julia/Climate-Energy/SARM/data"
-path   = "H2O_rwfmt_ISO-0-1.out"
-@time load_txt_file(datdir, path; nh=0)
+lines = open(joinpath(datdir, "CO2_Q", "q7-q122-description.txt"), "r") do io
 
 """
     Interpolate data onto a equidistant grid with n grid points
@@ -93,55 +26,24 @@ path   = "H2O_rwfmt_ISO-0-1.out"
     (x, y) -- [description]
 """
 function interpolate(x0, y0, n)
-    n0 = size(x0,1)
-
+    lp = LinearInterpolation(x0, y0)
     x = collect(LinRange(x0[1], x0[end], n))
-    y = zeros(Float64, n)
-
-    j = 1
-    for i in 1:n
-        xx = x[i]
-        while !(x0[j] <= xx && x[i] <= x0[j+1])
-            j += 1
-            if (j > n0-2)
-                break
-            end
-        end
-        j = min(j, n0-2)
-        v = (x[i] - x0[j]) / (x0[j+1] - x0[j])
-        y[i] = (1.0 - v) * y0[j] + v * y0[j+1]
-    end
-    x, y
+    x, lp.(x)
 end
 
-function load_description_file(datdir)
-    lines = open(joinpath(datdir, "CO2_Q", "q7-q122-description.txt"), "r") do io
-        split(read(io, String), "\n")
-    end
-
-    paths      = []
-    isotope_id = []
-    isotope_c  = []
-    isotope_m  = []
-    gis        = []
+function load_description_file(datadir)
+    qpath = joinpath("CO2_Q", "CO2_q7-q122.txt")
+    df = CSV.read(joinpath(datadir,qpath), DataFrame, header=1)
 
     # mass[kg] => g/mol * mass_factor
     mass_factor = 1.0e-3/6.02214076e23
 
-    # read the description file
-    for (i, line) in enumerate(lines[3:end])
-        ls = split(line)
-        if size(ls,1) > 5
-            global_id = parse(Int64, ls[1])
-            push!(isotope_id, parse(Int64, ls[2]))
-            push!(isotope_c,  parse(Float64,ls[5]))
-            push!(paths, ls[8])
-            push!(gis, parse(Int64, ls[9]))
+    isotope_id = df[!,:localID]
+    isotope_c  = df[!,:Abundance]
+    isotope_m  = df[!,"MolarMass/g·mol-1"] .* mass_factor
+    paths      = df[!,"Q(fullrange)"]
+    gis        = df[!,:gi]
 
-            mass = parse(Float64, ls[6]) * mass_factor
-            push!(isotope_m, mass)
-        end
-    end
     paths, isotope_id, isotope_c, isotope_m, gis       
 end
 
@@ -159,25 +61,18 @@ end
 function make_lookup_for_Q(datdir; Tmax=300.0)
     paths, isotope_id, isotope_c, isotope_m, gis = load_description_file(datdir)
 
-    T = []
-    Q = []
+    df = CSV.read(joinpath(datadir, "CO2_Q", paths[1]), DataFrame, headers=0)
+
     # read the partition function files
-    for path in paths
-        lines = readlines(joinpath(datdir, "CO2_Q", path))
-
-        TQ = Matrix{Float64}(undef, 2, size(lines,1))
-        for (i,line) in enumerate(lines)
-            a = split(line)
-            TQ[1, i] = parse(Float64, a[1])
-            TQ[2, i] = parse(Float64, a[2])
-        end
-
-        TT = TQ[1,:]
-        QQ = TQ[2,:]
-        index = ifelse.(TT .< Tmax, true, false)
-        push!(T, TT[index])
-        push!(Q, QQ[index])
+    for path in paths[2:end]
+        df2 = CSV.read(joinpath(datadir, "CO2_Q", path), DataFrame, headers=0)
+        append!(df, df2)
     end
+    T = df[!,1]
+    Q = df[!,2]
+    index = @. ifelse(T >= Tmin && T <= Tmax, true, false)
+    T = T[index]
+    Q = Q[index]
 
     n = size(T[1],1)
     m = size(T, 1)
@@ -190,6 +85,12 @@ function make_lookup_for_Q(datdir; Tmax=300.0)
     TQ, paths, isotope_id, isotope_c, isotope_m, gis
 end
 
+struct HPT
+    hT :: Vector{Float64} 
+    T  :: Vector{Float64}
+    hp :: Vector{Float64} 
+    p  :: Vector{Float64}
+end
 """
     make_T_p_over_height(input_dir; np = 100)
 
@@ -211,37 +112,16 @@ function make_T_p_over_height(input_dir; np = 100)
 
     h_p  = h1 .* 1.0e3
     p_p  = p1 .* 1.0e2
-
-    lip = LinearInterpolation(p_p, h_p)
-    h_p = collect(LinRange(h_p[1], h_p[end], np))
-    p_p = @. lip(h_p)
+    h_p, p_p = interpolate(p_p, h_p, np)
 
 
     h_T = [0.0, 13.0, 17.0, 25.0, 30.0, 45.0, 50.0, 70.0] .* 1.0e3
     T_T = [288.0, 215.8, 215.7, 225.1, 233.7, 269.9, 275.7, 218.1]
+    h_T, T_T = interpolate(h_T, T_T, np)
 
-    liT = LinearInterpolation(T_T, h_T)
-    h_T = collect(LinRange(h_T[1], h_T[end], np))
-    T_T = @. liT(h_T)
+    hpt = HPT(h_T, T_T, h_p, p_p)
 
-    T = zeros(Float64, 2, size(h_T,1))
-    p = zeros(Float64, 2, size(h_p,1))
-
-    T[1,:] = h_T
-    T[2,:] = T_T
-
-    p[1,:] = h_p
-    p[2,:] = p_p
-
-    h_T_path = joinpath(input_dir, "h_T.npy")
-    h_p_path = joinpath(input_dir, "h_p.npy")
-    write_npy(h_T_path, T)
-    write_npy(h_p_path, p)
-
-    h_T_path = joinpath(input_dir, "h_T.hdf5")
-    h_p_path = joinpath(input_dir, "h_p.hdf5")
-    save_array_as_hdf5(h_T_path, T, script_dir=false)
-    save_array_as_hdf5(h_p_path, p, script_dir=false)
+    hpt
 end
 
 """
