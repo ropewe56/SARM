@@ -30,6 +30,96 @@ struct LineData
     gl :: Vector{Float64}
 end
 
+struct LineDataEx
+    λ_ul0  
+    E_l    
+    E_u    
+    S      
+    A_ul   
+    γ_a    
+    γ_s    
+    n_a    
+    δ_a    
+    g_u    
+    g_l    
+    iso_m  
+    iso_c  
+    B_ul
+    B_lu
+    ΔλL0
+end
+
+function get_lines(ld)
+    # spectral data (HITRAN)
+
+    @infoe @sprintf("max_isotope_id = %d", max_isotope_id)
+    iso_ids = Vector{Int64}(undef,0)
+    for iline in 1:nb_lines
+        iso_id = spectral_data[12, iline]
+        isotope_id = floor(Int64, iso_id)
+        if isotope_id <= max_isotope_id
+            push!(iso_ids, isotope_id)
+        end
+    end
+    @infoe @sprintf("min_iso_id = %d, max_iso_id = %d, size(iso_ids,1) = %d", minimum(iso_ids), maximum(iso_ids), size(iso_ids,1))
+
+    linesc = Matrix{Float64}(undef, 16, size(iso_ids,1))
+    i = 1
+    for iλ in 1:nb_lines
+        iso_id =  spectral_data[12, iline]
+        isotope_id = floor(Int64, iso_id)
+        if isotope_id <= max_isotope_id
+
+            λ_ul0  = spectral_data[ 1, iline]
+            E_l    = spectral_data[ 2, iline]
+            E_u    = spectral_data[ 3, iline]
+            S      = spectral_data[ 4, iline]
+            A_ul   = spectral_data[ 5, iline]
+            γ_a    = spectral_data[ 6, iline]
+            γ_s    = spectral_data[ 7, iline]
+            n_a    = spectral_data[ 8, iline]
+            δ_a    = spectral_data[ 9, iline]
+            g_u    = spectral_data[10, iline]
+            g_l    = spectral_data[11, iline]
+            iso_m  = spectral_data[13, iline]
+            iso_c  = spectral_data[14, iline]
+
+            # Einstein coefficient of induced emission
+            B_ul = A_ul * λ_ul0^3 / (8.0*π * c_h)
+            # Einstein coefficient of absorption
+            B_lu = g_u / g_l * B_ul;
+
+            # Line pressure broadening coeffcient
+            # Lorentz line width
+            ΔλL0 = λ_ul0^2 * (γ_a * 1.0e5)
+
+            linesc[i_λ_ul0, i] = λ_ul0
+            linesc[i_E_l  , i] = E_l
+            linesc[i_E_u  , i] = E_u
+            linesc[i_S    , i] = S
+            linesc[i_A_ul , i] = A_ul
+            linesc[i_γ_a  , i] = γ_a
+            linesc[i_γ_s  , i] = γ_s
+            linesc[i_n_a  , i] = n_a
+            linesc[i_δ_a  , i] = δ_a
+            linesc[i_g_u  , i] = g_u
+            linesc[i_g_l  , i] = g_l
+            linesc[i_B_ul , i] = B_ul
+            linesc[i_B_lu , i] = B_lu
+            linesc[i_ΔλL0 , i] = ΔλL0
+            linesc[i_iso_m, i] = iso_m
+            linesc[i_iso_c, i] = iso_c
+
+            i += 1
+        end
+    end
+
+    nb_lines = size(iso_ids,1)
+    linesv = Matrix{Float64}(undef, 8, nb_lines)
+    LineData(iso_ids, linesc, linesv, nb_lines)
+end
+
+
 function load_description_file(datadir, subdir, qname)
     qpath = joinpath(datadir, subdir, qname)
     df = CSV.read(qpath, DataFrame, header=1)
