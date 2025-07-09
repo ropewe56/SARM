@@ -345,7 +345,7 @@ function integrate_along_path(spec::Spectrum, iN, iθ, NCO2, θ)
     # initial intensity
     @infoe @sprintf("initial_intensity = %s", spec.par.initial_intensity)
     if spec.par.initial_intensity == "planck"
-        I_λ = planck_λ(spec.par.T_surface, spec.λ)
+        I_λ = planck_λ(spec.par.surface_T, spec.λ)
         I_λ = I_λ .* (1.0 - spec.par.albedo)
     else
         I_λ = zeros(Float64, nb_λ)
@@ -367,7 +367,7 @@ function integrate_along_path(spec::Spectrum, iN, iθ, NCO2, θ)
     # total emission
     tot_e = 0.0
     #
-    Tmin = spec.par.T_surface
+    Tmin = spec.par.surface_T
     Nmin = 1.0e30
 
     result_data = Results(19)
@@ -381,7 +381,7 @@ function integrate_along_path(spec::Spectrum, iN, iθ, NCO2, θ)
         N = p / (c_kB * T)
 
         if spec.par.T_of_h == false
-            T = spec.par.T_surface
+            T = spec.par.surface_T
             if spec.par.N_of_h == false
                 N = p / (c_kB * T)
             end
@@ -499,7 +499,7 @@ function integrate(spec::Spectrum)
     λ1 = 1.0e-6
     λ2 = 1.0e-4
     nλ = 1000
-    T = spec.par.T_surface
+    T = spec.par.surface_T
     compute_and_save_planck(joinpath(spec.par.out_dir, "planck_intensity"), λ1, λ2, nλ, T)
 
     # vector of angles

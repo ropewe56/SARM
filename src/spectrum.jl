@@ -108,13 +108,7 @@ function save_spectrum_as_hdf5(path, spec::Spectrum)
     for i in 1:nb_λ
         A[1,i] = spec.λ[i];
         A[2,i] = spec.κ_c[i];
-        A[3,i] = spec.ϵ_c[i];
-    end
-    hdf5_path = string(path, ".hdf5")
-    save_array_as_hdf5(hdf5_path, A, script_dir=false)
-end
-
-function test_intepolator(spec::Spectrum)
+        A[3,i] = spec.ϵ_c[i];Planck_Ts
     nb_zsteps = size(spec.z,1)
     for istep in 1:nb_zsteps
         p = y_at(spec.p_vs_h, spec.z[istep])
@@ -125,31 +119,29 @@ function test_intepolator(spec::Spectrum)
 end
 
 
-function compute_emission_and_absorption_(line_data::LineData, Q_CO2, NCO2, T, N, p, T_ref, iline)
-    ldc = line_data.linesc
-
+function compute_emission_and_absorption_(ld::LineData, md, c, T, N, p, T_ref, iλ)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
 
     #                  1      2   3     4  5     6    7    8    9    10   11   12    13    14    15     16
     #lines[i] = SA_F64[λ_ul0, E_l, E_u, S, A_ul, γ_a, γ_s, n_a, δ_a, g_u, g_l, B_ul, B_lu, ΔλL0, iso_m, iso_c]
 
-    λ_ul0  = ldc[i_λ_ul0, iline]
-    E_l    = ldc[i_E_l  , iline]
-    E_u    = ldc[i_E_u  , iline]
-    A_ul   = ldc[i_A_ul , iline]
-    γ_a    = ldc[i_γ_a  , iline]
-    γ_s    = ldc[i_γ_s  , iline]
-    n_a    = ldc[i_n_a  , iline]
-    δ_a    = ldc[i_δ_a  , iline]
-    g_u    = ldc[i_g_u  , iline]
-    g_l    = ldc[i_g_l  , iline]
-    iso_m  = ldc[i_iso_m, iline]
-    iso_c  = ldc[i_iso_c, iline]
-    B_lu   = ldc[i_B_lu , iline]
-    B_ul   = ldc[i_B_ul , iline]
+    λ_ul0  = ld.λ_ul0[iλ]
+    E_l    = ld.E_l  [iλ]
+    E_u    = ld.E_u  [iλ]
+    A_ul   = ld.A_ul [iλ]
+    γ_a    = ld.γ_a  [iλ]
+    γ_s    = ld.γ_s  [iλ]
+    n_a    = ld.n_a  [iλ]
+    δ_a    = ld.δ_a  [iλ]
+    g_u    = ld.g_u  [iλ]
+    g_l    = ld.g_l  [iλ]
+    iso_m  = ld.iso_m[iλ]
+    iso_c  = ld.iso_c[iλ]
+    B_lu   = ld.B_lu [iλ]
+    B_ul   = ld.B_ul [iλ]
 
-    iso_id = line_data.iso_ids[iline]
+    iso_id = line_data.iso_ids[iλ]
     Q  = y_at(Q_CO2, T, ir=iso_id)
 
     Niso = N * NCO2 * iso_c
@@ -173,14 +165,14 @@ function compute_emission_and_absorption_(line_data::LineData, Q_CO2, NCO2, T, N
     κ = c_h * λ_ul / c_c * (N_l * B_lu - N_u * B_ul)
 
     ldv = line_data.linesv
-    ldv[i_γ   ,iline] = γ
-    ldv[i_ΔλL ,iline] = ΔλL
-    ldv[i_ΔλG ,iline] = ΔλG
-    ldv[i_N_l ,iline] = N_l
-    ldv[i_N_u ,iline] = N_u
-    ldv[i_ϵ   ,iline] = ϵ
-    ldv[i_κ   ,iline] = κ
-    ldv[i_λ_ul,iline] = λ_ul
+    ldv[i_γ   ,iλ] = γ
+    ldv[i_ΔλL ,iλ] = ΔλL
+    ldv[i_ΔλG ,iλ] = ΔλG
+    ldv[i_N_l ,iλ] = N_l
+    ldv[i_N_u ,iλ] = N_u
+    ldv[i_ϵ   ,iλ] = ϵ
+    ldv[i_κ   ,iλ] = κ
+    ldv[i_λ_ul,iλ] = λ_ul
 
     ΔλL, ΔλG
 end
@@ -205,8 +197,8 @@ dT = (spec.par.T_ref/T)^n_a
 
 ΔλL = λ_ul^2 * γ
 ΔλG = sqrt(2.0 * c_kB * T / iso_m) / c_c * λ_ul
-ΔλL_mean[iline] = ΔλL
-ΔλD_mean[iline] = ΔλG
+ΔλL_mean[iλ] = ΔλL
+ΔλD_mean[iλ] = ΔλG
 
 $N_l  = \dfrac{g_l}{Q(T, iso)} \exp(- E_l  β)  N_{iso}$
 $N_u  = \dfrac{g_u}{Q(T, iso)} \exp(- E_u  β)  N_{iso}$
@@ -215,14 +207,15 @@ $ϵ(λ) = \dfrac{h c}{λ_0} N_u A_{ul} * f(λ) \dfrac{dΩ}{4 π}$
 $κ(λ) = \dfrac{h c}{λ_0} N_l B_{lu}  \left(1 - \dfrac{N_u}{N_l}  \dfrac{g_l}{g_u}\right)  \dfrac{λ_0^2}{c} f(λ)$
 
 """
-function compute_emission_and_absorption(spec::Spectrum, T::Float64, N::Float64, p::Float64, NCO2::Float64)
+function compute_emission_and_absorption(ld::Vector{LineData}, md::Vector{MolecularData}, cc, T::Float64, N::Float64, p::Float64, )
     flag = false
-    nb_lines = spec.line_data.nb_lines
+    nb_lines = length(ld[1].λ)
     ΔλL_mean = Vector{Float64}(undef, nb_lines)
     ΔλD_mean = Vector{Float64}(undef, nb_lines)
 
-    Threads.@threads for iline in 1:nb_lines
-        ΔλL_mean[iline], ΔλD_mean[iline] = compute_emission_and_absorption_(spec.line_data, spec.Q_CO2, NCO2, T, N, p, spec.par.T_ref, iline)
+
+    Threads.@threads for iλ in 1:nb_lines
+        ΔλL_mean[iλ], ΔλD_mean[iλ] = compute_emission_and_absorption_(ld[1], md[1], cc[1], T, N, p, par.T_ref, iλ)
     end
 
     # return average line widths
@@ -250,26 +243,20 @@ function sum_over_lines(spec::Spectrum, T, N)
 
     ldc = spec.line_data.linesc
     ldv = spec.line_data.linesv
-
-    # sum over lines
-    Threads.@threads for iline in 1:nb_lines
-
-        #iso_id = spec.line_data.iso_ids[iline]
-
-        λ_ul = ldv[i_λ_ul, iline]
+Planck_Ts
 
         if λ_ul >= λ_1 && λ_ul <= λ_2
             iλ0 = floor(Int64, (λ_ul - λ_1) / Δλ * Float64(nb_λ-1) )
 
-            gauss = GaussProfile(ldc[i_iso_m, iline], T, λ_ul)
-            lorentz = LorentzProfile(ldv[i_ΔλL, iline])
+            gauss = GaussProfile(ldc[i_iso_m, iλ], T, λ_ul)
+            lorentz = LorentzProfile(ldv[i_ΔλL, iλ])
 
-            diλ = max(2, floor(Int64, (ldv[i_ΔλL, iline] + ldv[i_ΔλG, iline]) * spec.par.Δλ_factor / dλ))
+            diλ = max(2, floor(Int64, (ldv[i_ΔλL, iλ] + ldv[i_ΔλG, iλ]) * spec.par.Δλ_factor / dλ))
             iλm = max(1, iλ0 - diλ)
             iλp = min(iλ0 + diλ + 1, nb_λ-1)
 
-            κ = ldv[i_κ, iline]
-            ϵ = ldv[i_ϵ, iline]
+            κ = ldv[i_κ, iλ]
+            ϵ = ldv[i_ϵ, iλ]
 
             int_f = 0.0
             for iλ in iλm:iλp
@@ -358,7 +345,7 @@ function initial_intensity(spec::Spectrum)
     # initial intensity
     @infoe @sprintf("initial_intensity = %s", spec.par.initial_intensity)
     if spec.par.initial_intensity == "planck"
-        I_λ = planck_λ(spec.par.T_surface, spec.λ)
+        I_λ = planck_λ(spec.par.surface_T, spec.λ)
         I_λ .* (1.0 - spec.par.albedo)
     else
         zeros(Float64, length(spec.λ))
@@ -366,42 +353,38 @@ function initial_intensity(spec::Spectrum)
 end
 
 # integrate along the path
-function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
-    nb_zsteps = size(spec.z,1)
-    Δz = 2.0e3
+function integrate_along_path(ic, iθ,  θ, par, paths, atm, md, ld)
+    nb_zsteps = length(par.h)
     κds_limit = 0.01
 
     # number of wavelengths and wavelength intervall
-    nb_λ = length(spec.λ)
-    dλ = spec.λ[2] - spec.λ[1]
+    nb_λ = length(ld.λ)
+    dλ = ld.λ[2] - ld.λ[1]
 
     I_λ = initial_intensity(spec)
-
-    # pessure, temperature, density at z = 0
-    p = y_at(spec.p_vs_h, 0.0)
-    T = y_at(spec.t_vs_h, 0.0)
-    N = p / (c_kB * T)
 
     # initial integrated intensity
     int_I0 = sum(I_λ) * dλ
     @infoe @sprintf("p = %e  T = %e  N = %e, int_I = %e, initial_intensity = %s", p, T, N, int_I0, spec.par.initial_intensity)
 
-    Tmin = spec.par.T_surface
+    Tmin = par.surface_T
     Nmin = 1.0e30
 
     result_data = Results(19)
 
     @time begin
-    for istep in 1:nb_zsteps
+    for ih in eachindex(atm.h)
+        cc = [get_concentration(atm, atm.h[ih], im, par.c_ppm[im,ic]) for im in 1:size(par.c_ppm,2)]
+
         t1 = CPUtime_us()
         # pressure, temperature and density at height = z
-        p = y_at(spec.p_vs_h, spec.z[istep])
-        T = y_at(spec.t_vs_h, spec.z[istep])
-        N = p / (c_kB * T)
+        p = atm.p[istep]
+        T = atm.T[istep]
+        N = atm.N[istep]
 
-        if spec.par.T_of_h == false
-            T = spec.par.T_surface
-            if spec.par.N_of_h == false
+        if par.T_of_h == false
+            T = par.surface_T
+            if par.N_of_h == false
                 N = p / (c_kB * T)
             end
         end
@@ -416,7 +399,8 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
         t2 = CPUtime_us()
     
         # compute the line coefficients
-        (ΔλL_mean, ΔλD_mean) = compute_emission_and_absorption(spec, T, N, p, NCO2)
+        (ΔλL_mean, ΔλD_mean) = compute_emission_and_absorption(ld, md, cc.*N, T, N, p, )
+
         t3 = CPUtime_us()
 
         sum_over_lines(spec, T, N)
@@ -478,20 +462,30 @@ function integrate_along_path(spec::Spectrum, outid, iN, iθ, NCO2, θ)
 end
 
 # Compute absorption
-function integrate(spec::Spectrum)
+function integrate(par::RunParameter, paths::OutPaths, atm::Athmosphere, md::Vector{MolecularData}, ld::md::Vector{LineData})
+    mkpath(paths.out_dir)
+
+    par.λmin
+    par.λmax
+    nλ = floor(Int64, (par.λmax -par.λmin)/par.Δλ)
+    λ  = collect(range(par.λmin, par.λmax, nλ))
+
     # compute Planck intensity
     λ1 = 1.0e-6
     λ2 = 1.0e-4
     nλ = 1000
-    T = spec.par.T_surface
-    mkpath(spec.par.out_dir)
-    compute_and_save_planck(joinpath(spec.par.out_dir, "planck_intensity"), λ1, λ2, nλ, T)
-    compute_and_save_planck(joinpath(spec.par.out_dir, "planck_intensity_part"), spec.λ[1], spec.λ[end], size(spec.λ,1), spec.par.Planck_Ts)
+    T  = par.surface_T
+    λP = colect(range(λ1, λ2, nλ))
+    
+    IP = planck_λ(par.surface_T, λP)
+    IPs = compute_aplanck(par.planck_Ts, λP)
+    save_planck_as_hdf5(joinpath(paths.intensity_dir, paths.planck_single), par.surface_T, λP, IP)
+    save_planck_as_hdf5(joinpath(paths.intensity_dir, paths.planck_multi),  par.planck_Ts, λ, IPs)
 
     # vector of angles
-    vθ = spec.θdeg * π/180.
+    vθ = deg2rad(par.θdeg)
     # vector of CO2 concentrations
-    vNCO2 = copy(spec.NCO2)
+
 
     #logfile header
     ncol = 11
@@ -501,12 +495,12 @@ function integrate(spec::Spectrum)
 
     # loop over CO2 concentrations
     outid = 0
-    for (iN, NCO2) in enumerate(vNCO2)
+    for ic in eachindex(par.c_ppm)
         # loop over angles
         for (iθ, θ) in enumerate(vθ)
             outid = outid + 1
 
-            fname = joinpath(spec.par.out_dir, @sprintf("result_%03d_%d_%d.hdf5", outid, iN, iθ))
+            fname = joinpath(spec.par.out_dir, @sprintf("result_%03d_%d_%d.hdf5", outid, ic, iθ))
             @infoe @sprintf("Results file : %s", fname)
 
             # intermediate log file header line
@@ -515,7 +509,7 @@ function integrate(spec::Spectrum)
             @infoe out
 
             # integrate along path
-            @time result_data = integrate_along_path(spec, outid, iN, iθ, NCO2, θ)
+            @time result_data = integrate_along_path(ic, iθ, θ, par, paths, atm, md, ld)
 
             # save result_data
             write_result_data(result_data, fname)

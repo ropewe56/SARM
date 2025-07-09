@@ -1,35 +1,41 @@
 using JSON
+using Parameters
 
-mutable struct Parameter
-    mCO2                :: Float64
-    λmin                :: Float64
-    λmax                :: Float64
-    Δλ                  :: Float64
-    ΔλL                 :: Float64
-    T_surface           :: Float64
-    Planck_Ts           :: Vector{Float64}
-    initial_intensity   :: String
-    T_of_h              :: Bool
-    N_of_h              :: Bool
-    Δλ_factor           :: Float64
-    p_ref               :: Float64
-    T_ref               :: Float64
-    albedo              :: Float64
-    with_emission       :: Bool
-    background          :: Float64
-    max_isotope_id      :: Int64
-    integrate           :: Bool
-    out_dir             :: String
-    logfile             :: String
-    infofile            :: String
-    NCO2_path           :: String
-    theta_path          :: String
-    specdat_path        :: String
-    T_Q_path            :: String
-    h_p_path            :: String
-    h_T_path            :: String
-    z_path              :: String
-    z_iout              :: String
+struct MoleculeData
+    isotope_names       :: Vector{String}
+    isotope_masses      :: Vector{Float64}
+    TQ                  :: Matrix{Float64}
+    ids                 :: Matrix{Int64}
+    spectral_data       :: Matrix{Float64}
+    max_isotope_ids     :: Vector{Int64}
+    CO2_c0_ppm          :: Float64 
+    H2O_c0_ppm          :: Float64 
+end
+
+@with_kw mutable struct RunParameter
+    λmin                :: Float64         = 14.0e-6
+    λmax                :: Float64         = 16.0e-6
+    Δλ                  :: Float64         = 1.0e-11
+    ΔλL                 :: Float64         = 1.0e-11
+    Δλ_factor           :: Float64         = 1.0
+    surface_T           :: Float64         = 300.0
+    Planck_Ts           :: Vector{Float64} = zeros(Float64, 0)
+    initial_intensity   :: String          = "planck"
+    p_ref               :: Float64         = 1.06e5
+    T_ref               :: Float64         = 300.0
+    albedo              :: Float64         = 0.3
+    background          :: Float64         = 1.0
+    T_of_h              :: Bool            = true
+    N_of_h              :: Bool            = true
+    with_emission       :: Bool            = true
+    integrate           :: Bool            = true
+    out_dir             :: String          = ""
+    logfile             :: String          = ""
+    infofile            :: String          = ""
+    z_iout              :: String          = ""
+    CO2it_ppm           :: Matrix{Float64}([1.0, 2.0, 3.0])
+    θ_deg               :: Vector{Float64}([0.0, 40.0, 80.0])
+    z                   :: Dict("zmin"=> 0.0, "zmax"=> 7.0e4, "dzmin"=> 10.0, "dzmax"=> 1.0e3, "n" => 200,  "exponent" => 1)
 end
 
 function Parameter(parameter_json_file)
@@ -41,7 +47,7 @@ function Parameter(parameter_json_file)
     Δλ                  = json["run_parameter"]["Δλ"]
     ΔλL                 = json["run_parameter"]["ΔλL"]
     Δλ_factor           = json["run_parameter"]["Δλ_factor"]
-    T_surface           = json["run_parameter"]["T_surface"]
+    surface_T           = json["run_parameter"]["surface_T"]
     Planck_Ts           = json["run_parameter"]["Planck_Ts"]
     initial_intensity   = json["run_parameter"]["initial_intensity"]
     T_ref               = json["run_parameter"]["T_ref"]
@@ -73,7 +79,7 @@ function Parameter(parameter_json_file)
                 λmax              ,
                 Δλ                ,
                 ΔλL               ,
-                T_surface         ,
+                surface_T         ,
                 Planck_Ts         ,
                 initial_intensity ,
                 T_of_h            ,

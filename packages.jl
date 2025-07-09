@@ -2,6 +2,7 @@ using Pkg
 
 Pkg.add(url="/home/wester/Projects/Julia/Utilities/SimpleLog.jl")
 Pkg.add(url="/home/wester/Projects/Julia/Physics/PhysConst.jl")
+Pkg.add(url="/home/wester/Projects/Julia/Utilities/SpecialFileIO.jl")
 
 Pkg.add("CPUTime")
 Pkg.add("DataInterpolations")

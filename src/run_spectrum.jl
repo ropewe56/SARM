@@ -7,27 +7,14 @@ using PyPlot
 pygui(true)
 pygui(:qt5)
 
-include("create_input/create_QTp_lines_files.jl")
-include("create_input/create_Nthetaz_json_files.jl")
+include("input/atmosphere.jl")
+include("input/moleculardata.jl")
+include("input/runparameter.jl")
 
-include("interpolator.jl")
-include("parameter.jl")
 include("profiles.jl")
 include("resultdata.jl")
-include("spectralline.jl")
 include("planck.jl")
 include("spectrum.jl")
-
-#path1 = "/home/wester/Projects/Julia/Private/SimpleRadTrans.jl/HITRAN/CO2_rwfmt_ISO-0-12_wl-12-18-mum.npy"
-#isfile(path1)
-#data = read_npz(path1; set_extension=false)
-#
-#path2 = "/home/wester/Projects/Julia/Private/SimpleRadTrans.jl/HITRAN/CO2_rwfmt_ISO-0-12_wl-12-18-mum.hdf5"
-#write_hdf5(path2, Dict("HITRAN" => Dict("CO2" => data)))
-#
-#grdst = read_hdf5(path2)
-#print_names_and_types(grdst)
-
 
 """
     plotz()
@@ -107,7 +94,7 @@ input_run_parameter = OrderedDict(
         "T_ref"     => 296.0,      # K
         "CO2_mass"  => (12.011 + 2.0 * 15.999) * 1.660539040e-27,
         "integrate" => true,
-        "T_surface" => 288.0,
+        "surface_T" => 288.0,
         "Planck_Ts" => [200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 250.0, 260.0, 270.0, 280.0, 288.0],
     ),
     "npy_parameter" => OrderedDict(
@@ -129,14 +116,6 @@ function get_directory_paths(sarm_root)
     mkpath(joinpath(out_root, "spectrum"))
     data_dir, input_dir, out_root
 end
-
-function run_radition_transfer(json_file_paths)
-    for json_file in json_file_paths
-        spectrum = Spectrum(json_file)
-        integrate(spectrum)
-    end
-end
-
 function run_radition_transfer_rust(json_file_paths, rust_exe)
     for json_file in json_file_paths
         println(json_file)
@@ -144,13 +123,16 @@ function run_radition_transfer_rust(json_file_paths, rust_exe)
     end
 end
 
-data_dir, input_dir, output_root = get_directory_paths(dirname(@__DIR__))
-json_file_paths = create_parameter_json(input_dir, output_root, "D", input_run_parameter)
-create_data_files(data_dir, input_dir)
 
-run_radition_transfer(json_file_paths)
+function run_radition_transfer()
+    paths = OutPaths()
+    rpar= RunParameter()
+    atm = make_zpTN(rpar)
+    mdH2O = get_TQ(rpar.H2Oiso, rpar.Tmin, rpar.Tmax, rpar.nT);
+    mdCO2 = get_TQ(rpar.CO2iso, rpar.Tmin, rpar.Tmax, rpar.nT);
+    H2O_line_data = get_line_data(rpar.H2Oout, rpar.λmin, rpar.λmax);
+    CO2_line_data = get_line_data(rpar.CO2out, rpar.λmin, rpar.λmax);
 
-#rust_exe = "/home/wester/Projects/GitHub/SARM/rust/rust/target/debug/sarm"
-#run_radition_transfer_rust(json_file_paths, rust_exe)
-
+    integrate(rpar, paths, atm, [mdH2O,mdCO2], [H2O_line_data, CO2_line_data])
+end
 
