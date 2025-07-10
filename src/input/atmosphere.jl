@@ -12,13 +12,13 @@ struct Atmosphere
 end
 
 function get_densities(atm, z, c0)
-    c1 = atm.ip_hH2O(z)  H2O_concentration(z; c0=-1.0)
+    c1 = H2O_concentration(z; c0=-1.0)
     c2 = CO2_concentration(z; c0=c0)
     N*c1, N*c2
 end
 
-function CO2_concentration(z; c0 = 425.0)
-    h = [0.0, 10000.0, 70000.0]
+#function CO2_concentration(z; c0 = 425.0)
+#    h = [0.0, 10000.0, 70000.0]
 
 """
     Create a Vector{Float64} with z-values for the integration
@@ -31,10 +31,10 @@ function CO2_concentration(z; c0 = 425.0)
     n
     e
 """
-function make_z_e(zpar)
-    nz = zpar.nz
-    e  = zpar.e
-    dzmin, dzmax, zmin, zmax = zpar.dzmin, zpar.dzmax, zpar.zmin, zpar.zmax
+function make_z_e(par)
+    nz = par.nz
+    e  = par.e
+    dzmin, dzmax, zmin, zmax = par.dzmin, par.dzmax, par.zmin, par.zmax
 
     dz = collect(range(dzmin, dzmax, nz))
     dz = dz.^e
@@ -50,10 +50,10 @@ function make_z_e(zpar)
     z 
 end
 
-function make_z_exp(zpar)
-    nz = zpar.nz
-    e  = zpar.e
-    dzmin, dzmax, zmin, zmax = zpar.dzmin, zpar.dzmax, zpar.zmin, zpar.zmax
+function make_z_exp(par)
+    nz = par.nz
+    e  = par.e
+    dzmin, dzmax, zmin, zmax = par.dzmin, par.dzmax, par.zmin, par.zmax
 
     dz = collect(range(dzmin, dzmax, nz))
     dz = dz.^e
@@ -67,9 +67,9 @@ function make_z_exp(zpar)
         z[i] = zo
     end
 
-    h  = collect(range(zmin, zmax, zpar.nz))
+    h  = collect(range(zmin, zmax, par.nz))
     z = @. exp(h/maximum(h)*e) - 1.0
-    z = z/maximum(z) * zpar.zmax
+    z = z/maximum(z) * par.zmax
     z
 end
 
@@ -86,8 +86,8 @@ end
     n : number of z-values
 
 """
-function make_z_log10(zpar)
-    log10_z = collect(range(log10(max(1.0e-1, zpar.xmin)), log10(zpar.zmax), zpar.nz))
+function make_z_log10(par)
+    log10_z = collect(range(log10(max(1.0e-1, par.xmin)), log10(par.zmax), par.nz))
     z = @. 10^log10_z
     z
 end
@@ -114,8 +114,6 @@ function get_concentration(atm, z, i, c0)
     end
     c ./ maximum(c) .* c0
 end
-
-
 
 """
     get_zTpN(nz)
@@ -147,21 +145,21 @@ function get_pT_interpolator()
     ip_hp, ip_hT
 end
 
-function make_zpTN(zpar)
+function Atmosphere(par)
     ip_hp, ip_hT = get_pT_interpolator()
 
-    z = if zpar.z == :e
-        make_z_e(zpar)
-    elseif zpar.zmethod == :exp
-        make_z_exp(zpar)
-    elseif zpar.zmethod == :log10
-        make_z_log10(zpar)
-    elseif zpar.zmethod == :equalnumber
-        h = collect(range(zpar.zmin, zpar.zmax, zpar.nz*10))
+    z = if par.e == :e
+        make_z_e(par)
+    elseif par.zmethod == :exp
+        make_z_exp(par)
+    elseif par.zmethod == :log10
+        make_z_log10(par)
+    elseif par.zmethod == :equalnumber
+        h = collect(range(par.zmin, par.zmax, par.nz*10))
         p, T, = ip_hp.(h), ip_hT.(h)
         N = @. p / (c_kB * T)
 
-        np = zpar.nz*10
+        np = par.nz*10
         x0 = sqrt.(reverse(N))
         y0 = reverse(h)
         x, y, ip_Nh = lininterp(x0, y0, np)
@@ -179,5 +177,5 @@ function make_zpTN(zpar)
     Atmosphere(z, p, T, N, [ip1, ip2])
 end
 
-#zpar = ZParameter()
-#make_zpTN(zpar)
+#par = parameter()
+#make_zpTN(par)

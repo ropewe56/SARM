@@ -1,6 +1,7 @@
 import Statistics
 using StaticArrays
 using CPUTime
+using Interpolations
 
 using PhysConst
 using SimpleLog
@@ -9,9 +10,9 @@ mutable struct Spectrum
     line_data   :: LineData
     T_ref       :: Float64          # reference temperature
     p_ref       :: Float64          # reference pressure
-    Q_CO2       :: Interpolator     # the Interplator for the
-    p_vs_h      :: Interpolator     # pressure over height
-    t_vs_h      :: Interpolator     # temperature over height
+    Q_CO2      # :: Interpolator     # the Interplator for the
+    p_vs_h     # :: Interpolator     # pressure over height
+    t_vs_h     # :: Interpolator     # temperature over height
     NCO2        :: Vector{Float64}  # CO2 concentration values to iterate over
     θdeg        :: Vector{Float64}  # the angles to iterate over
     z           :: Vector{Float64}  # height values
@@ -23,11 +24,7 @@ mutable struct Spectrum
     logfile     :: IOStream         # logfile
 end
 
-function Spectrum(parameter_json_file)
-    # create a Parameter object form the jso strinh
-    par = Parameter(parameter_json_file)
-
-    line_data = LineData(par.specdat_path, par.max_isotope_id)
+function Spectrum(par, atm, mdata, ldata)
 
     # height values
     z = read_npy(par.z_path)
@@ -59,7 +56,7 @@ function Spectrum(parameter_json_file)
     κ_c = zeros(Float64, nb_λ)
     ϵ_c = zeros(Float64, nb_λ)
 
-    Spectrum(   line_data  ,
+    Spectrum(   ldata ,
                 par.T_ref  ,
                 par.p_ref  ,
                 Q_CO2      ,
@@ -77,7 +74,7 @@ function Spectrum(parameter_json_file)
 end
 
 # Save convolved absorption and emission spectra to hdf5 file
-function save_convolved_to_hdf5(spec::Spectrum, path)
+function save_convolved_to_hdf5(, path)
     nb_λ = size(spec.λ, 1)
     a = Matrix{Float64}(undef, 3, nb_λ)
     for i in 1:nb_λ
@@ -123,10 +120,11 @@ function compute_emission_and_absorption_(ld::LineData, md, c, T, N, p, T_ref, i
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
 
+    iλ = 1
     #                  1      2   3     4  5     6    7    8    9    10   11   12    13    14    15     16
     #lines[i] = SA_F64[λ_ul0, E_l, E_u, S, A_ul, γ_a, γ_s, n_a, δ_a, g_u, g_l, B_ul, B_lu, ΔλL0, iso_m, iso_c]
 
-    λ_ul0  = ld.λ_ul0[iλ]
+    λ_ul0  = ld.λ210[iλ]
     E_l    = ld.E1[iλ]
     E_u    = ld.E2[iλ]
     A_ul   = ld.A21[iλ]
@@ -243,7 +241,6 @@ function sum_over_lines(spec::Spectrum, T, N)
 
     ldc = spec.line_data.linesc
     ldv = spec.line_data.linesv
-Planck_Ts
 
         if λ_ul >= λ_1 && λ_ul <= λ_2
             iλ0 = floor(Int64, (λ_ul - λ_1) / Δλ * Float64(nb_λ-1) )
@@ -341,27 +338,27 @@ function add_background()
 #        end
 end
 
-function initial_intensity(spec::Spectrum)
+function initial_intensity(par, λ)
     # initial intensity
-    @infoe @sprintf("initial_intensity = %s", spec.par.initial_intensity)
-    if spec.par.initial_intensity == "planck"
-        I_λ = planck_λ(spec.par.surface_T, spec.λ)
-        I_λ .* (1.0 - spec.par.albedo)
+    @infoe @sprintf("initial_intensity = %s", par.initial_intensity)
+    I_λ = if par.initial_intensity == :planck
+        I_λ = planck_λ(par.surface_T, λ)
+        I_λ .* (1.0 - par.albedo)
     else
-        zeros(Float64, length(spec.λ))
+        zeros(Float64, length(λ))
     end
 end
 
 # integrate along the path
 function integrate_along_path(ic, iθ,  θ, par, paths, atm, md, ld)
-    nb_zsteps = length(par.h)
+    nb_zsteps = length(atm.h)
     κds_limit = 0.01
 
     # number of wavelengths and wavelength intervall
-    nb_λ = length(ld.λ)
-    dλ = ld.λ[2] - ld.λ[1]
+    nb_λ = length(ld[1].λ210)
+    dλ = ld[1].λ210[2] - ld[1].λ210[1]
 
-    I_λ = initial_intensity(spec)
+    I_λ = initial_intensity(par, ld[1].λ210)
 
     # initial integrated intensity
     int_I0 = sum(I_λ) * dλ
@@ -373,14 +370,15 @@ function integrate_along_path(ic, iθ,  θ, par, paths, atm, md, ld)
     result_data = Results(19)
 
     @time begin
+    ih = 1
     for ih in eachindex(atm.h)
         cc = [get_concentration(atm, atm.h[ih], im, par.c_ppm[im,ic]) for im in 1:size(par.c_ppm,2)]
 
         t1 = CPUtime_us()
         # pressure, temperature and density at height = z
-        p = atm.p[istep]
-        T = atm.T[istep]
-        N = atm.N[istep]
+        p = atm.p[ih]
+        T = atm.T[ih]
+        N = atm.N[ih]
 
         if par.T_of_h == false
             T = par.surface_T
@@ -462,8 +460,8 @@ function integrate_along_path(ic, iθ,  θ, par, paths, atm, md, ld)
 end
 
 # Compute absorption
-function integrate(par::RunParameter, paths::OutPaths, atm::Athmosphere, md::Vector{MolecularData}, ld::md::Vector{LineData})
-    mkpath(paths.out_dir)
+function integrate(par::RunParameter, paths::OutPaths, atm::Atmosphere, md::Vector{MolecularData}, ld::Vector{LineData})
+    mkpath(paths.outdir)
 
     par.λmin
     par.λmax
@@ -475,15 +473,15 @@ function integrate(par::RunParameter, paths::OutPaths, atm::Athmosphere, md::Vec
     λ2 = 1.0e-4
     nλ = 1000
     T  = par.surface_T
-    λP = colect(range(λ1, λ2, nλ))
-    
+    λP = collect(range(λ1, λ2, nλ))
+l    
     IP = planck_λ(par.surface_T, λP)
-    IPs = compute_aplanck(par.planck_Ts, λP)
+    IPs = compute_planck(par.planck_Ts, λP)
     save_planck_as_hdf5(joinpath(paths.intensity_dir, paths.planck_single), par.surface_T, λP, IP)
     save_planck_as_hdf5(joinpath(paths.intensity_dir, paths.planck_multi),  par.planck_Ts, λ, IPs)
 
     # vector of angles
-    vθ = deg2rad(par.θdeg)
+    vθ = deg2rad.(par.θdeg)
     # vector of CO2 concentrations
 
 
@@ -495,6 +493,8 @@ function integrate(par::RunParameter, paths::OutPaths, atm::Athmosphere, md::Vec
 
     # loop over CO2 concentrations
     outid = 0
+    ic = 1
+    iθ, θ = 1, 0.0
     for ic in eachindex(par.c_ppm)
         # loop over angles
         for (iθ, θ) in enumerate(vθ)

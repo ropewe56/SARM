@@ -8,8 +8,10 @@ using Parameters
     Δλ_factor           :: Float64         = 1.0
     surface_T           :: Float64         = 288.0
     planck_Ts           :: Vector{Float64} = [288.0, 260.0, 240.0, 220.0]
-    initial_intensity   :: String          = "planck"
-
+    initial_intensity   :: Symbol          = :planck
+    TQmin               :: Int64           = 200.0
+    TQmax               :: Int64           = 300.0
+    nQT                 :: Int64           = 
     p_ref               :: Float64         = 1.06e5
     T_ref               :: Float64         = 288.0
     albedo              :: Float64         = 0.3
@@ -26,4 +28,5 @@ using Parameters
     dzmin               :: Float64         = 10.0
     dzmax               :: Float64         = 20000.0
     e                   :: Float64         = 2.0
+    nz                  :: Int64           = 50
 end

@@ -21,8 +21,8 @@ end
 
 function compute_planck(T::Union{Float64,Vector{Float64}}, λ::Vector{Float64})
     IP = if isa(T, Vector{Float64})
-        IPlanck = Matrix{Float64}(undef, lenght(λ), lenght(Ts))
-        for i in eachinde(Ts)
+        IPlanck = Matrix{Float64}(undef, length(λ), length(T))
+        for i in eachindex(T)
             IPlanck[:,i] = planck_λ(T[i], λ)
         end
         IPlanck
