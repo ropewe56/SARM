@@ -6,7 +6,7 @@ using DataFrames
 using CSV
 
 struct MolecularData
-    Qs       
+    Qinp       
     iso_id   :: Vector{Int64}
     iso_a    :: Vector{Float64}
     iso_m    :: Vector{Float64}
@@ -59,7 +59,7 @@ end
 function MolecularData(isopath, TQmin, TQmax)
     iso_id, iso_a, iso_m, gj, qpaths = load_Isotope_file(isopath)
     
-    Qs = []
+    Qinp = []
     # read the partition function files
     for (i,path) in enumerate(qpaths)
         fpath = joinpath(dirname(isopath), path)        
@@ -79,10 +79,10 @@ function MolecularData(isopath, TQmin, TQmax)
         Q = Q[index]
         lip = linear_interpolation(T, Q, extrapolation_bc = Line())
 
-        push!(Qs, lip)
+        push!(Qinp, lip)
     end
 
-    MolecularData(Qs, iso_id, iso_a, iso_m, gj)
+    MolecularData(Qinp, iso_id, iso_a, iso_m, gj)
 end
 
 

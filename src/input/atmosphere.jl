@@ -4,11 +4,12 @@ using PhysConst
 include("../utils.jl")
 
 struct Atmosphere
-    h  :: Vector{Float64}
-    p  :: Vector{Float64}
-    T  :: Vector{Float64}
-    N  :: Vector{Float64}
-    ip :: Vector{Interpolations.Extrapolation}
+    h     :: Vector{Float64}
+    p     :: Vector{Float64}
+    T     :: Vector{Float64}
+    N     :: Vector{Float64}
+    cz0   :: Vector{Float64}
+    zcips :: Vector{Interpolations.Extrapolation}
 end
 
 function get_densities(atm, z, c0)
@@ -92,27 +93,43 @@ function make_z_log10(par)
     z
 end
 
-function H2O_concentration(z; c0=-1.0)
+function H2O_concentration(z)
     h = reverse([84.977, 76.278, 67.577, 32.608, 41.176, 52.132, 13.792, 11.565, 8.095, 6.142, 3.77, 1.952, 0.137].*1.0e3)
-    c = reverse([-5.8683, -5.5885, -5.4074, -5.3251, -5.3086, -5.2757, -5.1934, -4.6173, -3.465, -3.0864, -2.642, -2.3951, -2.0988])
+    clog10 = reverse([-5.8683, -5.5885, -5.4074, -5.3251, -5.3086, -5.2757, -5.1934, -4.6173, -3.465, -3.0864, -2.642, -2.3951, -2.0988])
+    c = 10.0.^clog10
+    c = c ./ maximum(c)
+
     index = sortperm(h)
+
     h2  = h[index]
-    c2 = c[index]
-    linear_interpolation(h2, c2, extrapolation_bc = Line())
+    c2  = c[index]
+
+    cz0 = 10.0^(-2.0988)
+    c3 = log10.(c2)
+    cz0, linear_interpolation(h2, c3, extrapolation_bc = Line())
 end
 
-function CO2_concentration(z; c0 = 425.0)
+function CO2_concentration(z)
     h = [0.0, 10000.0, 70000.0]
     c = [1.0, 2.0/3.0, 2.0/3.0]
-    linear_interpolation(h, c, extrapolation_bc = Line())
+    1.0, linear_interpolation(h, c, extrapolation_bc = Line())
 end
 
-function get_concentration(atm, z, i, c0)
-    c = 10.0.^(atm.ip[i](z))
-    c0 = if c0 < 0.0
-        c[1]
+function get_concentrations(atm, z, cz0)
+    zc1 = 10.0.^(atm.zcips[1](z))
+    zc2 = 10.0.^(atm.zcips[2](z))
+    c1 = if c0[1] < 0.0
+        zc1
+    else
+        zc1 = zc1 / atm.cz01 * c0[1]
     end
-    c ./ maximum(c) .* c0
+    c2 = if c0[2] < 0.0
+        zc2
+    else
+        zc2 = zc2 / atm.cz02 * c0[2]
+    end
+
+    [c1,c2]
 end
 
 """
@@ -171,10 +188,10 @@ function Atmosphere(par)
     p, T, = ip_hp.(z), ip_hT.(z)
     N = @. p / (c_kB * T)
 
-    ip1 = H2O_concentration(z)
-    ip2 = CO2_concentration(z)
+    cz01, zcip1 = H2O_concentration(z)
+    cz02, zcip2 = CO2_concentration(z)
 
-    Atmosphere(z, p, T, N, [ip1, ip2])
+    Atmosphere(z, p, T, N, [cz01, cz02], [zcip1, zcip2])
 end
 
 #par = parameter()

@@ -116,7 +116,7 @@ function save_spectrum_as_hdf5(path, spec::Spectrum)
 end
 
 
-function compute_emission_and_absorption_(ld::LineData, md, c, T, N, p, T_ref, iλ)
+function compute_emission_and_absorption_iλ(ldi::LineData, mdi, Nmi, T, N, p, T_ref, iλ)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
 
@@ -124,55 +124,44 @@ function compute_emission_and_absorption_(ld::LineData, md, c, T, N, p, T_ref, i
     #                  1      2   3     4  5     6    7    8    9    10   11   12    13    14    15     16
     #lines[i] = SA_F64[λ_ul0, E_l, E_u, S, A_ul, γ_a, γ_s, n_a, δ_a, g_u, g_l, B_ul, B_lu, ΔλL0, iso_m, iso_c]
 
-    λ_ul0  = ld.λ210[iλ]
-    E_l    = ld.E1[iλ]
-    E_u    = ld.E2[iλ]
-    A_ul   = ld.A21[iλ]
-    γ_a    = ld.γa[iλ]
-    γ_s    = ld.γs[iλ]
-    n_a    = ld.na[iλ]
-    δ_a    = ld.δa[iλ]
-    g_u    = ld.gu[iλ]
-    g_l    = ld.gl[iλ]
-    iso_m  = ld.isom[iλ]
-    iso_c  = ld.isoc[iλ]
-    B_lu   = ld.B12[iλ]
-    B_ul   = ld.B12[iλ]
+    λ_ul0  = ldi.λ210[iλ]
+    E1    = ldi.E1[iλ]
+    E2    = ldi.E2[iλ]
+    A21   = ldi.A21[iλ]
+    γair  = ldi.γair[iλ]
+    γself = ldi.γself[iλ]
+    naiar = ldi.nair[iλ]
+    δair  = ldi.δair[iλ]
+    g2    = ldi.g2[iλ]
+    g1    = ldi.g1[iλ]
+    B12   = ldi.B12[iλ]
+    B21   = ldi.B12[iλ]
+
+    iso_m  = ldi.isom[iλ]
+    iso_c  = ldi.isoc[iλ]
 
     iso_id = line_data.iso_ids[iλ]
-    Q  = y_at(Q_CO2, T, ir=iso_id)
+    Q = mi.Qinp(T)
 
-    Niso = N * NCO2 * iso_c
-
-    λ_ul = λ_ul0 / (1.0 + λ_ul0 * δ_a * p)
+    λ21 = λ210 / (1.0 + λ210 * δair * p)
 
     # γ = (Tref/T)^n_{air} (γ_a(p_{ref], T_{ref}) (p - p_{CO2}) + γ_s p_{CO2}(p_{ref], T_{ref})
-    dT = (T_ref/T)^n_a
-    γ = dT * (γ_a * p * (1.0 - NCO2) + γ_s * p * NCO2)
+    dT = (T_ref/T)^nair
+    γ = dT * (γair * p * (1.0 - Nmi) + γself * p * Nmi)
 
-    ΔλL = λ_ul^2 * γ
-    ΔλG = sqrt(2.0 * c_kB * T / iso_m) / c_c * λ_ul
+    ΔλL = λ21^2 * γ
+    ΔλG = sqrt(2.0 * c_kB * T / iso_m) / c_c * λ21
 
-    N_l  = g_l * exp(- E_l * β) / Q * Niso
-    N_u  = g_u * exp(- E_u * β) / Q * Niso
+    N1  = g1 * exp(- E1 * β) / Q * Nmi
+    N2  = g2 * exp(- E2 * β) / Q * Nmi
 
     # ϵ_λ = h * c / λ_0 / (4 * π) * N_u * A_ul * f_λ
-    ϵ = c_h * c_c / λ_ul *  N_u * A_ul * dΩ / (4.0 * π)
+    ϵ = c_h * c_c / λ21 *  N2 * A21 * dΩ / (4.0 * π)
 
     # κ_λ = h / λ_0 * N_l * B_lu * (1 - N_u/N_l * g_l/g_u) * λ_0**2 / c * f_λ
-    κ = c_h * λ_ul / c_c * (N_l * B_lu - N_u * B_ul)
+    κ = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)
 
-    ldv = line_data.linesv
-    ldv[i_γ   ,iλ] = γ
-    ldv[i_ΔλL ,iλ] = ΔλL
-    ldv[i_ΔλG ,iλ] = ΔλG
-    ldv[i_N_l ,iλ] = N_l
-    ldv[i_N_u ,iλ] = N_u
-    ldv[i_ϵ   ,iλ] = ϵ
-    ldv[i_κ   ,iλ] = κ
-    ldv[i_λ_ul,iλ] = λ_ul
-
-    ΔλL, ΔλG
+    γ, ΔλL, ΔλG, N1, N2, ϵ, κ, λ21
 end
 
 @doc raw"""
@@ -205,19 +194,26 @@ $ϵ(λ) = \dfrac{h c}{λ_0} N_u A_{ul} * f(λ) \dfrac{dΩ}{4 π}$
 $κ(λ) = \dfrac{h c}{λ_0} N_l B_{lu}  \left(1 - \dfrac{N_u}{N_l}  \dfrac{g_l}{g_u}\right)  \dfrac{λ_0^2}{c} f(λ)$
 
 """
-function compute_emission_and_absorption(ld::Vector{LineData}, md::Vector{MolecularData}, cc, T::Float64, N::Float64, p::Float64, )
+function compute_emission_and_absorption(ld::Vector{LineData}, md::Vector{MolecularData}, Nmolecules, T::Float64, N::Float64, p::Float64)
     flag = false
-    nb_lines = length(ld[1].λ)
+    nb_lines = length(ld[1].λ210)
     ΔλL_mean = Vector{Float64}(undef, nb_lines)
     ΔλD_mean = Vector{Float64}(undef, nb_lines)
 
-
-    Threads.@threads for iλ in 1:nb_lines
-        ΔλL_mean[iλ], ΔλD_mean[iλ] = compute_emission_and_absorption_(ld[1], md[1], cc[1], T, N, p, par.T_ref, iλ)
+    dimiλ = []
+    i = 1
+    for i in eachindex(ld)
+        ldi, mdi, Nmi = ld[i], md[i], Nmolecules[i]
+        dat = []
+        Threads.@threads for iλ in 1:nb_lines
+            γ, ΔλL, ΔλG, N1, N2, ϵ, κ, λ21 = compute_emission_and_absorption_iλ(ldi, mdi, Nmi, T, N, p, par.T_ref, iλ)
+            push!(dat, (γ, ΔλL, ΔλG, N1, N2, ϵ, κ, λ21))
+        end
+        push!(dimiλ, dat)
     end
 
     # return average line widths
-    Statistics.mean(ΔλL_mean), Statistics.mean(ΔλD_mean)
+    dimiλ, Statistics.mean(ΔλL_mean), Statistics.mean(ΔλD_mean)
 end
 
 """
@@ -226,7 +222,7 @@ end
     T - temperature
     N - density
  """
-function sum_over_lines(spec::Spectrum, T, N)
+function sum_over_lines(dimiλ, T, N)
     nb_lines = spec.line_data.nb_lines
     nb_λ = size(spec.λ,1)
 
@@ -350,13 +346,13 @@ function initial_intensity(par, λ)
 end
 
 # integrate along the path
-function integrate_along_path(ic, iθ,  θ, par, paths, atm, md, ld)
+function integrate_along_path(par, atm, md, ld, cz0, iθ, θ)
     nb_zsteps = length(atm.h)
     κds_limit = 0.01
 
     # number of wavelengths and wavelength intervall
-    nb_λ = length(ld[1].λ210)
-    dλ = ld[1].λ210[2] - ld[1].λ210[1]
+    nbλ = length(ld[1].λ210)
+    dλ  = ld[1].λ210[2] - ld[1].λ210[1]
 
     I_λ = initial_intensity(par, ld[1].λ210)
 
@@ -372,7 +368,7 @@ function integrate_along_path(ic, iθ,  θ, par, paths, atm, md, ld)
     @time begin
     ih = 1
     for ih in eachindex(atm.h)
-        cc = [get_concentration(atm, atm.h[ih], im, par.c_ppm[im,ic]) for im in 1:size(par.c_ppm,2)]
+        cc = get_concentrations(atm, atm.h[ih], cz0)
 
         t1 = CPUtime_us()
         # pressure, temperature and density at height = z
@@ -394,14 +390,15 @@ function integrate_along_path(ic, iθ,  θ, par, paths, atm, md, ld)
             Nmin = N
         end
 
+        Nmolecules = cc .= N 
         t2 = CPUtime_us()
     
         # compute the line coefficients
-        (ΔλL_mean, ΔλD_mean) = compute_emission_and_absorption(ld, md, cc.*N, T, N, p, )
+        (dimiλ, ΔλL_mean, ΔλD_mean) = compute_emission_and_absorption(ld, md, Nmolecules, T, N, p)
 
         t3 = CPUtime_us()
 
-        sum_over_lines(spec, T, N)
+        sum_over_lines(dimiλ, T, N)
         t4 = CPUtime_us()
 
         add_background()
@@ -462,6 +459,7 @@ end
 # Compute absorption
 function integrate(par::RunParameter, paths::OutPaths, atm::Atmosphere, md::Vector{MolecularData}, ld::Vector{LineData})
     mkpath(paths.outdir)
+    mkpath(paths.intensity_dir)
 
     par.λmin
     par.λmax
@@ -482,8 +480,6 @@ l
 
     # vector of angles
     vθ = deg2rad.(par.θdeg)
-    # vector of CO2 concentrations
-
 
     #logfile header
     ncol = 11
@@ -496,6 +492,7 @@ l
     ic = 1
     iθ, θ = 1, 0.0
     for ic in eachindex(par.c_ppm)
+        cz0 = par.c_ppm[ic]
         # loop over angles
         for (iθ, θ) in enumerate(vθ)
             outid = outid + 1
@@ -509,7 +506,7 @@ l
             @infoe out
 
             # integrate along path
-            @time result_data = integrate_along_path(ic, iθ, θ, par, paths, atm, md, ld)
+            @time result_data = integrate_along_path(par, atm, md, ld, cz0, iθ, θ)
 
             # save result_data
             write_result_data(result_data, fname)

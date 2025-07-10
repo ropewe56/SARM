@@ -21,7 +21,7 @@ using Parameters
     with_emission       :: Bool            = true
     integrate           :: Bool            = true
     θdeg                :: Vector{Float64} = Vector{Float64}([0.0, 40.0, 80.0])
-    c_ppm               :: Matrix{Float64} = [-1.0 278.0; -1.0 430.0; -1.0 278.0*2.0]
+    c_ppm               :: VectorVector{{Float64}} = [[-1.0 278.0], [-1.0 430.0], [-1.0 278.0*2.0]]
     zmethod             :: Symbol          = :equalnumber
     zmin                :: Float64         = 0.0
     zmax                :: Float64         = 70000.0
