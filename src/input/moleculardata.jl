@@ -15,43 +15,26 @@ struct MolecularData
 end
 
 struct LineData
-    mid:: Vector{Int64}
-    lid:: Vector{Int64}
-    λ  :: Vector{Float64}
-    El :: Vector{Float64}
-    Eu :: Vector{Float64}
-    S  :: Vector{Float64}
-    A  :: Vector{Float64}
-    γa :: Vector{Float64}
-    γs :: Vector{Float64}
-    na :: Vector{Float64}
-    δa :: Vector{Float64}
-    gu :: Vector{Float64}
-    gl :: Vector{Float64}
+    mid   :: Vector{Float64}
+    lid   :: Vector{Float64}
+    ν21   :: Vector{Float64}
+    λ210  :: Vector{Float64}
+    S21   :: Vector{Float64}
+    A21   :: Vector{Float64}
+    γair  :: Vector{Float64}
+    γself :: Vector{Float64}
+    ΔE21  :: Vector{Float64}
+    E1    :: Vector{Float64}
+    E2    :: Vector{Float64}
+    nair  :: Vector{Float64}
+    δair  :: Vector{Float64}
+    g2    :: Vector{Float64}
+    g1    :: Vector{Float64}
+    B21   :: Vector{Float64}
+    B12   :: Vector{Float64}
 end
 
-struct LineDataEx
-    λ_ul0  
-    E_l    
-    E_u    
-    S      
-    A_ul   
-    γ_a    
-    γ_s    
-    n_a    
-    δ_a    
-    g_u    
-    g_l    
-    iso_m  
-    iso_c  
-    B_ul
-    B_lu
-    ΔλL0
-end
-
-function get_lines(ld)
-    # spectral data (HITRAN)
-
+function get_melcule_and_isotope_ids()
     @infoe @sprintf("max_isotope_id = %d", max_isotope_id)
     iso_ids = Vector{Int64}(undef,0)
     for iline in 1:nb_lines
@@ -61,64 +44,7 @@ function get_lines(ld)
             push!(iso_ids, isotope_id)
         end
     end
-    @infoe @sprintf("min_iso_id = %d, max_iso_id = %d, size(iso_ids,1) = %d", minimum(iso_ids), maximum(iso_ids), size(iso_ids,1))
-
-    linesc = Matrix{Float64}(undef, 16, size(iso_ids,1))
-    i = 1
-    for iλ in 1:nb_lines
-        iso_id =  spectral_data[12, iline]
-        isotope_id = floor(Int64, iso_id)
-        if isotope_id <= max_isotope_id
-
-            λ_ul0  = spectral_data[ 1, iline]
-            E_l    = spectral_data[ 2, iline]
-            E_u    = spectral_data[ 3, iline]
-            S      = spectral_data[ 4, iline]
-            A_ul   = spectral_data[ 5, iline]
-            γ_a    = spectral_data[ 6, iline]
-            γ_s    = spectral_data[ 7, iline]
-            n_a    = spectral_data[ 8, iline]
-            δ_a    = spectral_data[ 9, iline]
-            g_u    = spectral_data[10, iline]
-            g_l    = spectral_data[11, iline]
-            iso_m  = spectral_data[13, iline]
-            iso_c  = spectral_data[14, iline]
-
-            # Einstein coefficient of induced emission
-            B_ul = A_ul * λ_ul0^3 / (8.0*π * c_h)
-            # Einstein coefficient of absorption
-            B_lu = g_u / g_l * B_ul;
-
-            # Line pressure broadening coeffcient
-            # Lorentz line width
-            ΔλL0 = λ_ul0^2 * (γ_a * 1.0e5)
-
-            linesc[i_λ_ul0, i] = λ_ul0
-            linesc[i_E_l  , i] = E_l
-            linesc[i_E_u  , i] = E_u
-            linesc[i_S    , i] = S
-            linesc[i_A_ul , i] = A_ul
-            linesc[i_γ_a  , i] = γ_a
-            linesc[i_γ_s  , i] = γ_s
-            linesc[i_n_a  , i] = n_a
-            linesc[i_δ_a  , i] = δ_a
-            linesc[i_g_u  , i] = g_u
-            linesc[i_g_l  , i] = g_l
-            linesc[i_B_ul , i] = B_ul
-            linesc[i_B_lu , i] = B_lu
-            linesc[i_ΔλL0 , i] = ΔλL0
-            linesc[i_iso_m, i] = iso_m
-            linesc[i_iso_c, i] = iso_c
-
-            i += 1
-        end
-    end
-
-    nb_lines = size(iso_ids,1)
-    linesv = Matrix{Float64}(undef, 8, nb_lines)
-    LineData(iso_ids, linesc, linesv, nb_lines)
 end
-
 
 function load_description_file(datadir, subdir, qname)
     qpath = joinpath(datadir, subdir, qname)
@@ -216,38 +142,54 @@ end
     using only values used in the computations
 
 """
-function get_line_data(Mout, λmin, λmax)
-    df0 = CSV.read(Mout, DataFrame)
+function get_line_data(outpath, λmin, λmax)
+    # molec_id, local_iso_id, nu        , sw       ,a    , gamma_air, gamma_self, elower    , n_air, delta_air , gp  , gpp
+    # 2       , 5           , 555.003645, 7.486e-31,0.214, 0.0672   , 0.078     , 3244.5786 , 0.75 , -0.000716 , 170 , 170
+    df0 = CSV.read(outpath, DataFrame)
 
     νmax = 1.0e-2/λmin
     νmin = 1.0e-2/λmax
     ids(x) = @.( (x >= νmin) && (x < νmax) )
     df = df0[ids(df0.nu),:]
 
-    mid = df[!,1]
-    lid = df[!,2]
-    ν   = df[!,3]
-    λ   = 1.0e-2 ./ ν
+    mid   = df[!,1]
+    lid   = df[!,2]
+    ν21   = df[!,3]
+    λ210  = 1.0e-2 ./ ν
+    S21   = df[!,4]
+    A21   = df[!,5]
+    γair  = df[!,6] ./ 1.0e-2 * 1.0e-5  # cm => m, bar => pascal
+    γself = df[!,7] ./ 1.0e-2 * 1.0e-5  # cm => m, bar => pascal
+    ΔE21  = c_h .* c_c ./ λ210
+    E1    = df[!,8] .* c_h .* c_c
+    E2    = E1 .+ ΔE21
+    nair  = df[!,9]
+    δair  = df[!,10] ./ 1.0e-2 * 1.0e-5  # cm => m, bar => pascal
+    g2    = df[!,11]
+    g1    = df[!,12]
 
-    S   = df[!,  4]
-    A   = df[!,  5]
-    γ_a = df[!,  6]
-    γ_s = df[!,  7]
-    ν_l = df[!,  8]
-    n_a = df[!,  9]
-    δ_a = df[!, 10]
-    g_u = df[!, 11]
-    g_l = df[!, 12]
+    # Einstein coefficient of induced emission
+    B21 = A21 * λ210^3 / (8.0*π * c_h)
+    # Einstein coefficient of absorption
+    B12 = g2 / g1 * B21;
 
-    ν_l   = ν_l ./ 1.0e-2           # cm => m, bar => pascal
-    γ_a   = γ_a ./ 1.0e-2 * 1.0e-5  # cm => m, bar => pascal
-    γ_s   = γ_s ./ 1.0e-2 * 1.0e-5  # cm => m, bar => pascal
-    δ_a   = δ_a ./ 1.0e-2 * 1.0e-5  # cm => m, bar => pascal
-    ΔE_ul = c_h .* c_c ./ λ
-    E_l   = c_h .* c_c .* ν_l
-    E_u   = E_l .+ ΔE_ul
-
-    LineData(mid, lid, λ, E_l, E_u, S, A, γ_a, γ_s, n_a, δ_a, g_u, g_l)
+    LineData(   mid  ,
+                lid  ,
+                ν21  ,
+                λ210 ,
+                S21  ,
+                A21  ,
+                γair ,
+                γself,
+                ΔE21 ,
+                E1   ,
+                E2   ,
+                nair ,
+                δair ,
+                g2   ,
+                g1   ,
+                B21  ,
+                B12)
 end
 
 function test()
