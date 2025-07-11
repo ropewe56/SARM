@@ -8,140 +8,127 @@ struct Atmosphere
     p     :: Vector{Float64}
     T     :: Vector{Float64}
     N     :: Vector{Float64}
-    cz0   :: Vector{Float64}
-    zcips :: Vector{Interpolations.Extrapolation}
+    chitp :: Vector{Interpolations.Extrapolation}
 end
 
-function get_densities(atm, z, c0)
-    c1 = H2O_concentration(z; c0=-1.0)
-    c2 = CO2_concentration(z; c0=c0)
+function get_densities(atm, h, c0)
+    c1 = H2O_concentration(h; c0=-1.0)
+    c2 = CO2_concentration(h; c0=c0)
     N*c1, N*c2
 end
 
-#function CO2_concentration(z; c0 = 425.0)
-#    h = [0.0, 10000.0, 70000.0]
-
 """
-    Create a Vector{Float64} with z-values for the integration
+    Create a Vector{Float64} with h-values for the integration
 
-    not used anymore, instead see make_z_log10
-    zmin
-    zmax
-    dzmin
-    dzmax
+    not used anymore, instead see make_h_log10
+    hmin
+    hmax
+    dhmin
+    dhmax
     n
     e
 """
-function make_z_e(par)
-    nz = par.nz
+function make_h_e(par)
+    nh = par.nh
     e  = par.e
-    dzmin, dzmax, zmin, zmax = par.dzmin, par.dzmax, par.zmin, par.zmax
+    dhmin, dhmax, hmin, hmax = par.dhmin, par.dhmax, par.hmin, par.hmax
 
-    dz = collect(range(dzmin, dzmax, nz))
-    dz = dz.^e
-    z  = cumsum(dz)
-    z  = z * zmax / maximum(z)
+    dh = collect(range(dhmin, dhmax, nh))
+    dh = dh.^e
+    h  = cumsum(dh)
+    h  = h * hmax / maximum(h)
 
-    zout = [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 5000.0, 10000.0, 70000.0]
-    for zo in zout
-        zz = z .- zo
-        i = argmin(zz.^2)
-        z[i] = zo
+    hout = [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 5000.0, 10000.0, 70000.0]
+    for ho in hout
+        hh = h .- ho
+        i = argmin(hh.^2)
+        h[i] = ho
     end
-    z 
+    h 
 end
 
-function make_z_exp(par)
-    nz = par.nz
+function make_h_exp(par)
+    nh = par.nh
     e  = par.e
-    dzmin, dzmax, zmin, zmax = par.dzmin, par.dzmax, par.zmin, par.zmax
+    dhmin, dhmax, hmin, hmax = par.dhmin, par.dhmax, par.hmin, par.hmax
 
-    dz = collect(range(dzmin, dzmax, nz))
-    dz = dz.^e
-    z  = cumsum(dz)
-    z  = z * zmax / maximum(z)
+    dh = collect(range(dhmin, dhmax, nh))
+    dh = dh.^e
+    h  = cumsum(dh)
+    h  = h * hmax / maximum(h)
 
-    zout = [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 5000.0, 10000.0, 70000.0]
-    for zo in zout
-        zz = z .- zo
-        i = argmin(zz.^2)
-        z[i] = zo
+    hout = [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 5000.0, 10000.0, 70000.0]
+    for ho in hout
+        hh = h .- ho
+        i = argmin(hh.^2)
+        h[i] = ho
     end
 
-    h  = collect(range(zmin, zmax, par.nz))
-    z = @. exp(h/maximum(h)*e) - 1.0
-    z = z/maximum(z) * par.zmax
-    z
+    h  = collect(range(hmin, hmax, par.nh))
+    h = @. exp(h/maximum(h)*e) - 1.0
+    h = h/maximum(h) * par.hmax
+    h
 end
 
 """
-    make_z_log10(zmin, zmax, n)
+    make_h_log10(hmin, hmax, n)
 
-    make a Vector of z-values: radiation transfer from z[i] to z[i+1]
-    z-values are created equadistantly on a log10 scale, than z = 10^log10_z
+    make a Vector of h-values: radiation transfer from h[i] to h[i+1]
+    h-values are created equadistantly on a log10 scale, than h = 10^log10_h
 
-    create a Vector{Int64} z_iout of length n, plot inetensity and spectrum where z_iou == 1
+    create a Vector{Int64} h_iout of length n, plot inetensity and spectrum where h_iou == 1
 
-    zmin : starting z value (e.g. 0.1 m)
-    zmax : end z value (70 km TAO)
-    n : number of z-values
+    hmin : starting h value (e.g. 0.1 m)
+    hmax : end h value (70 km TAO)
+    n : number of h-values
 
 """
-function make_z_log10(par)
-    log10_z = collect(range(log10(max(1.0e-1, par.xmin)), log10(par.zmax), par.nz))
-    z = @. 10^log10_z
-    z
+function make_h_log10(par)
+    log10_h = collect(range(log10(max(1.0e-1, par.xmin)), log10(par.hmax), par.nh))
+    h = @. 10^log10_h
+    h
 end
 
-function H2O_concentration(z)
+function H2O_concentration(h)
     h = reverse([84.977, 76.278, 67.577, 32.608, 41.176, 52.132, 13.792, 11.565, 8.095, 6.142, 3.77, 1.952, 0.137].*1.0e3)
-    clog10 = reverse([-5.8683, -5.5885, -5.4074, -5.3251, -5.3086, -5.2757, -5.1934, -4.6173, -3.465, -3.0864, -2.642, -2.3951, -2.0988])
-    c = 10.0.^clog10
-    c = c ./ maximum(c)
+    c_log10 = reverse([-5.8683, -5.5885, -5.4074, -5.3251, -5.3086, -5.2757, -5.1934, -4.6173, -3.465, -3.0864, -2.642, -2.3951, -2.0988])
 
     index = sortperm(h)
-
     h2  = h[index]
-    c2  = c[index]
+    c_log10 = c_log10[index]
 
-    cz0 = 10.0^(-2.0988)
-    c3 = log10.(c2)
-    cz0, linear_interpolation(h2, c3, extrapolation_bc = Line())
+    c   = 10.0.^c_log10
+    c1  = c ./ maximum(c)
+    c2  = log10.(c1)
+    linear_interpolation(h2, c2, extrapolation_bc = Line())
 end
 
-function CO2_concentration(z)
+function CO2_concentration(h)
     h = [0.0, 10000.0, 70000.0]
     c = [1.0, 2.0/3.0, 2.0/3.0]
-    1.0, linear_interpolation(h, c, extrapolation_bc = Line())
+    linear_interpolation(h, c, extrapolation_bc = Line())
 end
 
-function get_concentrations(atm, z, cz0)
-    zc1 = 10.0.^(atm.zcips[1](z))
-    zc2 = 10.0.^(atm.zcips[2](z))
-    c1 = if c0[1] < 0.0
-        zc1
-    else
-        zc1 = zc1 / atm.cz01 * c0[1]
-    end
-    c2 = if c0[2] < 0.0
-        zc2
-    else
-        zc2 = zc2 / atm.cz02 * c0[2]
-    end
+function get_concentrations(atm, h, ch0)
+    ch1 = 10.0.^(atm.chitp[1](h))
+    ch2 = 10.0.^(atm.chitp[2](h))
 
-    [c1,c2]
+    ch1 = ch1 * ch0[1]
+    ch2 = ch2 * ch0[2]
+
+    [ch1, ch2]
 end
 
 """
-    get_zTpN(nz)
+    get_hTpN(nh)
 
-height dependent digitized values of T and p http://climatemodels.uchicago.edu/modtran/
+height dependent digitihed values of T and p http://climatemodels.uchicago.edu/modtran/
     
 create linear interpolation objects and interpolate values onto an equidistamt grid of n points
 
 compute density N and inverse interpolate N,h with N equidistant
 
-the h values are z values
+the h values are h values
 """
 function get_pT_interpolator()
     # p over h
@@ -165,34 +152,34 @@ end
 function Atmosphere(par)
     ip_hp, ip_hT = get_pT_interpolator()
 
-    z = if par.e == :e
-        make_z_e(par)
-    elseif par.zmethod == :exp
-        make_z_exp(par)
-    elseif par.zmethod == :log10
-        make_z_log10(par)
-    elseif par.zmethod == :equalnumber
-        h = collect(range(par.zmin, par.zmax, par.nz*10))
+    h = if par.e == :e
+        make_h_e(par)
+    elseif par.hmethod == :exp
+        make_h_exp(par)
+    elseif par.hmethod == :log10
+        make_h_log10(par)
+    elseif par.hmethod == :equalnumber
+        h = collect(range(par.hmin, par.hmax, par.nh*10))
         p, T, = ip_hp.(h), ip_hT.(h)
         N = @. p / (c_kB * T)
 
-        np = par.nz*10
+        np = par.nh*10
         x0 = sqrt.(reverse(N))
         y0 = reverse(h)
         x, y, ip_Nh = lininterp(x0, y0, np)
-        z = reverse(y)
+        h = reverse(y)
         N = reverse(x).^2
-        z
+        h
     end
 
-    p, T, = ip_hp.(z), ip_hT.(z)
+    p, T, = ip_hp.(h), ip_hT.(h)
     N = @. p / (c_kB * T)
 
-    cz01, zcip1 = H2O_concentration(z)
-    cz02, zcip2 = CO2_concentration(z)
+    chitp1 = H2O_concentration(h)
+    chitp2 = CO2_concentration(h)
 
-    Atmosphere(z, p, T, N, [cz01, cz02], [zcip1, zcip2])
+    Atmosphere(h, p, T, N, [chitp1, chitp2])
 end
 
 #par = parameter()
-#make_zpTN(par)
+#make_hpTN(par)

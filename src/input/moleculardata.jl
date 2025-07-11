@@ -58,11 +58,13 @@ end
 """
 function MolecularData(isopath, TQmin, TQmax)
     iso_id, iso_a, iso_m, gj, qpaths = load_Isotope_file(isopath)
-    
+        
+    niso = min(length(iso_id), length(qpaths))
+
     Qinp = []
     # read the partition function files
-    for (i,path) in enumerate(qpaths)
-        fpath = joinpath(dirname(isopath), path)        
+    for i in 1:niso
+        fpath = joinpath(dirname(isopath), qpaths[i])        
         T = []
         Q = []
         open(fpath, "r") do io
@@ -81,7 +83,6 @@ function MolecularData(isopath, TQmin, TQmax)
 
         push!(Qinp, lip)
     end
-
     MolecularData(Qinp, iso_id, iso_a, iso_m, gj)
 end
 

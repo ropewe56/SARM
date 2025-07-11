@@ -6,8 +6,8 @@ using DataFrames
 using CSV
 
 struct LineData
-    mid   :: Vector{Float64}
-    lid   :: Vector{Float64}
+    mid   :: Vector{Int64}
+    lid   :: Vector{Int64}
     ν21   :: Vector{Float64}
     λ210  :: Vector{Float64}
     S21   :: Vector{Float64}
@@ -33,7 +33,9 @@ end
     using only values used in the computations
 
 """
-function LineData(outpath, λmin, λmax)
+#outpath = paths.CO2out
+#λmin, λmax = par.λmin, par.λmax
+function LineData(outpath, λmin, λmax, iso_max)
     # molec_id, local_iso_id, nu        , sw       ,a    , gamma_air, gamma_self, elower    , n_air, delta_air , gp  , gpp
     # 2       , 5           , 555.003645, 7.486e-31,0.214, 0.0672   , 0.078     , 3244.5786 , 0.75 , -0.000716 , 170 , 170
     df0 = CSV.read(outpath, DataFrame)
@@ -64,7 +66,32 @@ function LineData(outpath, λmin, λmax)
     # Einstein coefficient of absorption
     B12 = @. g2 / g1 * B21;
 
+    iso_max = 11
+    lid_min_max = extrema(lid)
+    niso = min(lid_min_max[2] - lid_min_max[1] + 1, iso_max)
+
+    index = @.ifelse(lid <= niso, true, false)
+    mid   = mid[index]
+    lid   = lid[index]
+    ν21   = ν21[index]
+    λ210  = λ210[index]
+    S21   = S21[index]
+    A21   = A21[index]
+    γair  = γair[index]
+    γself = γself[index]
+    ΔE21  = ΔE21[index]
+    E1    = E1[index]
+    E2    = E2[index]
+    nair  = nair[index]
+    δair  = δair[index]
+    g2    = g2[index]
+    g1    = g1[index]
+    B21   = B21[index]
+    B12   = B12[index]
+
+
     index = sortperm(λ210)
+
     LineData(   mid[index],
                 lid[index],
                 ν21[index],
@@ -81,5 +108,5 @@ function LineData(outpath, λmin, λmax)
                 g2[index],
                 g1[index],
                 B21[index],
-                B12)
+                B12[index])
 end
