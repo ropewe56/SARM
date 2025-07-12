@@ -6,33 +6,9 @@ using Interpolations
 using PhysConst
 using SimpleLog
 
-# Save convolved absorption and emission spectra to hdf5 file
-function save_convolved_to_hdf5(λb, κb, ϵb, hdf5_path)
-    groups = Dict("wl_bin" => Dict("wl" => λb, "kappa" => κb, "epsilon" => ϵb))
-    save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    
-end
-
-# Save convolved absorption and emission spectra to ny file
-function save_spectrum_as_npy(path, λl, κl, ϵl)
-    groups = Dict("wl_lines" => Dict("wl" => λl, "kappa" => κl, "epsilon" => ϵl))
-end
-
-#function save_spectrum_as_hdf5(path, spec::Spectrum)
-#    nb_λ = size(spec.λ, 1)
-#    A = Matrix{Float64}(undef, 3, nb_λ)
-#    for i in 1:nb_λ
-#        A[1,i] = spec.λ[i];
-#        A[2,i] = spec.κ_c[i];
-#        A[3,i] = spec.ϵ_c[i];Planck_Ts
-#    nb_zsteps = size(spec.z,1)
-#    for istep in 1:nb_zsteps
-#        p = y_at(spec.p_vs_h, spec.z[istep])
-#        T = y_at(spec.t_vs_h, spec.z[istep])
-#        N = p / (c_kB * T)
-#        @info @sprintf("z = %8.2e, p = %8.2e, T = %8.2e, N = %8.2e", spec.z[istep], p, T, N)
-#    end
-#end
-
+"""
+No5
+"""
 function compute_line_emission_and_absorption_iλ(ldspecies::LineData, Qinpspecies, cspecies, mspecies, T, N, p, T_ref, iλ)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
@@ -53,8 +29,11 @@ function compute_line_emission_and_absorption_iλ(ldspecies::LineData, Qinpspeci
     B12   = ldspecies.B12[iλ]
     B21   = ldspecies.B12[iλ]
     mid   = ldspecies.mid[iλ]
-    lid   = ldspecies.lid[iλ]+1
+    lid   = ldspecies.lid[iλ]
 
+    if lid > 11
+        @warne mid, lid, λ210
+    end
     Q     = Qinpspecies[lid](T)
     λ21   = λ210 / (1.0 + λ210 * δair * p)
 
@@ -107,6 +86,8 @@ $ϵ(λ) = \dfrac{h c}{λ_0} N_u A_{ul} * f(λ) \dfrac{dΩ}{4 π}$
 $κ(λ) = \dfrac{h c}{λ_0} N_l B_{lu}  \left(1 - \dfrac{N_u}{N_l}  \dfrac{g_l}{g_u}\right)  \dfrac{λ_0^2}{c} f(λ)$
 
 compute_lines_emission_and_absorption(moleculardata, linedata, Nmolecules, T, N, p)
+
+No4
 """
 function compute_lines_emission_and_absorption(moleculardata::Vector{MolecularData}, linedata::Vector{LineData}, 
         cch0, T::Float64, N::Float64, p::Float64)
@@ -129,6 +110,7 @@ function compute_lines_emission_and_absorption(moleculardata::Vector{MolecularDa
         iλ = 1
         #Threads.@threads 
         for iλ in 1:nλl
+            # No5
             mid, lid, λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ = 
                 compute_line_emission_and_absorption_iλ(ldspecies, Qinpspecies, cspecies, mspecies, T, N, p, par.T_ref, iλ)
 
@@ -149,9 +131,9 @@ end
 
     T - temperature
     N - density
- """
-function sum_over_lines(par, lined, T, λb)
-    nbl = length(ldl)
+"""
+function sum_over_lines(par, lines, T, λb)
+    nbl = length(lines)
 
     λ1 = λb[1]
     λend = λb[end]
@@ -163,19 +145,19 @@ function sum_over_lines(par, lined, T, λb)
     ϵbt = zeros(Float64, nλ, Threads.nthreads())
     fbt = zeros(Float64, nλ, Threads.nthreads())
 
+
     # λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, mass, Float64(mid)
 
-    iline = 1
-    Threads.@threads for iline in eachindex(ldl)
-        λ21  = lined[iline][1]      
-        γ    = lined[iline][2]    
-        ΔλL  = lined[iline][3]      
-        ΔλG  = lined[iline][4]      
-        N1   = lined[iline][5]     
-        N2   = lined[iline][6]     
-        ϵ    = lined[iline][7]    
-        κ    = lined[iline][8]    
-        mass = lined[iline][9]       
+    Threads.@threads for il in eachindex(lines)
+        λ21  = lines[il][1]      
+        γ    = lines[il][2]    
+        ΔλL  = lines[il][3]      
+        ΔλG  = lines[il][4]      
+        N1   = lines[il][5]     
+        N2   = lines[il][6]     
+        ϵ    = lines[il][7]    
+        κ    = lines[il][8]    
+        mass = lines[il][9]       
 
         if λ21 >= λ1 && λ21 <= λend
             iλ = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλ-1)) + 1
@@ -271,6 +253,9 @@ function add_background()
 #        end
 end
 
+"""
+No3
+"""
 function initial_intensity(par, λ)
     # initial intensity
     @infoe @sprintf("initial_intensity = %s", par.initial_intensity)
@@ -283,9 +268,11 @@ function initial_intensity(par, λ)
     Iλ
 end
 
-# integrate along the path
-function integrate_along_path(par, atm, moleculardata, linedata, ch0, iθ, θ, λb)
-    κΔs_limit = 0.01
+"""
+    integrate_along_path(par, atm, moleculardata, linedata, ch0, ic, iθ, θ, λb)
+No2
+"""
+function integrate_along_path(par, paths, atm, moleculardata, linedata, ch0, ic, iθ, θ, λb)
 
     # number of lines wavelength intervall
     nλl = length(linedata[1].λ210)
@@ -296,67 +283,62 @@ function integrate_along_path(par, atm, moleculardata, linedata, ch0, iθ, θ, �
     dλb = λb[2] - λb[1]
 
     # initial integrated intensity
+    # No3
     Iλb = initial_intensity(par, λb)
     int_I0 = sum(Iλb) * dλb
-    #@infoe @sprintf("p = %e  T = %e  N = %e, int_I = %e, initial_intensity = %s", p, T, N, int_I0, par.initial_intensity)
 
     Tmin = par.surface_T
     Nmin = 1.0e30
 
     result_data = Results(19)
 
-    ih = 1
-    h = atm.h[ih]
     nh = length(atm.h)
+    ih = 1
+    
     @time begin
+
     for ih in eachindex(atm.h)
+        t1 = CPUtime_us()
+
         # >> 1
         cch0 = get_concentrations(atm, atm.h[ih], ch0)
         # << 1
-
-        t1 = CPUtime_us()
-        # pressure, temperature and density at height = z
+        
+        # >> 1  pressure, temperature and density at height = z
         p = atm.p[ih]
         T = atm.T[ih]
         N = atm.N[ih]
 
-        if par.T_of_h == false
+        if par.T_of_h == false 
             T = par.surface_T
             if par.N_of_h == false
                 N = p / (c_kB * T)
             end
         end
-
-        if T < Tmin
-            Tmin = T
-        end
-        if N < Nmin
-            Nmin = N
-        end
+        if T < Tmin Tmin = T end
+        if N < Nmin Nmin = N end
+        # << 1
 
         t2 = CPUtime_us()
     
-        # compute the line coefficients
         # >> 2
-        lined, ΔλL_mean, ΔλD_mean = compute_lines_emission_and_absorption(moleculardata, linedata, cch0, T, N, p);
+        # No4
+        species_lines, ΔλL_mean, ΔλD_mean = compute_lines_emission_and_absorption(moleculardata, linedata, cch0, T, N, p);
         # << 2
 
         t3 = CPUtime_us()
 
-        # >> 3
-        κb = Vector{Vector{Float64}}(undef, length(lined))
-        ϵb = Vector{Vector{Float64}}(undef, length(lined))
-        # 3
-        for ispecies in eachindex(lined)
-            κb[ispecies], ϵb[ispecies] = sum_over_lines(par, lined[ispecies], T, λb)
+        # >> No6
+        κb = Vector{Vector{Float64}}(undef, length(species_lines))
+        ϵb = Vector{Vector{Float64}}(undef, length(species_lines))
+        for ispecies in eachindex(species_lines)
+            lines = species_lines[ispecies]
+            κb[ispecies], ϵb[ispecies] = sum_over_lines(par, lines, T, λb)
         end
         # << 3
 
         t4 = CPUtime_us()
-        length(κb)
-        ll = @. ifelse(κb > 0.0, 1, 0)
-        sum(ll)
-
+ 
         # 4
         add_background()
         t5 = CPUtime_us()
@@ -366,41 +348,34 @@ function integrate_along_path(par, atm, moleculardata, linedata, ch0, iθ, θ, �
         if ih < nh
             Δs = (atm.h[ih+1] - atm.h[ih]) / cos(θ)
         else
+            par.κΔs_limit
             Δs = (atm.h[ih] - atm.h[ih-1]) / cos(θ)
         end
 
-        # 5
-        integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par.with_emission, κΔs_limit)
-        #@infoe I_λ[div(nb_λ,2)], sum(I_λ)
+        # No7
+        integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par.with_emission, par.κΔs_limit) # 3
         t6 = CPUtime_us()
 
-        # save intensity and spectrum
-        if par.z_iout[istep] == 1
-            znext = par.h[istep] + Δz
-
-            Iname = @sprintf("intensity_%03d_%03d_%d_%d_%5.3e", outid, istep, iN, iθ, par.z[istep])
-            fname = joinpath(par.outdir, "intensity", Iname)
-            save_intensity_as_hdf5(fname, λb, Iλb)
-
-            cname = @sprintf("spectrum_%03d_%03d_%d_%d_%5.3e", outid, istep, iN, iθ, par.z[istep])
-            fname = joinpath(par.outdir, "spectrum", cname)
-            save_spectrum_as_hdf5(fname, par)
+        if atm.h_iout[ih] == 1
+            md = moleculardata[1]
+            write_to_hdf5(paths, atm, outid, ih, ic, iθ, md, λb, Iλb, κb, ϵb)
         end
-        t7 = CPUtime_us()
 
         # add results
-        if istep == 1
-            int_I, int_ϵ, int_κ, int_Iκ = add_results(result_data, dλ, 0.0, NCO2, θ, T, N, ΔλL_mean, ΔλD_mean, I_λ, vϵ, vκ, vIκ)
+        # No8
+        if ih == 1
+            int_I, int_ϵ, int_κ, int_Iκ = add_results(result_data, dλb, 0.0, ch0[2], θ, T, N, ΔλL_mean, ΔλD_mean, Iλb, ϵb, κb)
         end
-        int_I, int_ϵ, int_κ, int_Iκ = add_results(result_data, dλ, par.h[istep], NCO2, θ, T, N, ΔλL_mean, ΔλD_mean, I_λ, vϵ, vκ, vIκ)
+        int_I, int_ϵ, int_κ, int_Iκ = add_results(result_data, dλb, par.h[ih], ch0[2], θ, T, N, ΔλL_mean, ΔλD_mean, Iλb, ϵb, κb)
 
         ## write result_data to log file
         out = @sprintf("iz = %3d, z = %12.5e,  NCO2 = %12.5e, θ = %12.5e, T = %12.5e, N = %12.5e, I = %12.5e, ϵ = %12.5e, κ = %12.5e, Iκ = %12.5e, ΔλL = %12.5e, ΔλD = %12.5e",
-                                istep, spec.z[istep], NCO2*1.0e6, θ*180.0/π, T, N, int_I, int_ϵ, int_κ, int_Iκ, ΔλL_mean, ΔλD_mean)
+                                ih, atm.h[ih], NCO2*1.0e6, θ*180.0/π, T, N, int_I, int_ϵ, int_κ, int_Iκ, ΔλL_mean, ΔλD_mean)
         write(spec.logfile, out * "\n")
         flush(spec.logfile)
         @infoe out
-        t8 = CPUtime_us()
+        
+        t7 = CPUtime_us()
         
         ts = [t1, t2, t3, t4, t5, t6, t7, t8]
         str = []
@@ -408,13 +383,16 @@ function integrate_along_path(par, atm, moleculardata, linedata, ch0, iθ, θ, �
             push!(str, @sprintf("%d:%8.2e", i, ts[i+1] - ts[i]))
         end
         @infoe join(str, ", ")
-    end  # lop over z istep
+    end  # lop over z ih
     end # @time
 
     result_data
 end
 
-# Compute absorption
+"""
+    function integrate(par::RunParameter, paths::OutPaths, atm::Atmosphere, moleculardata::Vector{MolecularData}, linedata::Vector{LineData})
+No1
+"""
 function integrate(par::RunParameter, paths::OutPaths, atm::Atmosphere, moleculardata::Vector{MolecularData}, linedata::Vector{LineData})
     mkpath(paths.outdir)
     mkpath(paths.intensity_dir)
@@ -449,17 +427,18 @@ function integrate(par::RunParameter, paths::OutPaths, atm::Atmosphere, molecula
             outid = outid + 1
 
             # >> 
-            fname = joinpath(spec.par.out_dir, @sprintf("result_%03d_%d_%d.hdf5", outid, ic, iθ))
+            fname = joinpath(paths.outdir, @sprintf("result_%03d_%d_%d.hdf5", outid, ic, iθ))
             @infoe @sprintf("Results file : %s", fname)
 
             # intermediate log file header line
-            out = @sprintf("# iN = %d, iθ = %d, NCO2 = %12.5e, θ = %12.5e", iN, iθ, NCO2*1.0e6, θ/π*180.0)
-            write(spec.logfile, string(out, "\n"))
+            out = @sprintf("# ic = %d, iθ = %d, ch0 = %s, θ = %12.5e", ic, iθ, ch0, θ)
+            write(paths.logfile, string(out, "\n"))
             @infoe out
             # <<
 
             # integrate along path
-            @time result_data = integrate_along_path(par, atm, moleculardata, linedata, ch0, iθ, θ, λb)
+            # No2
+            @time result_data = integrate_along_path(par, paths, atm, moleculardata, linedata, ch0, ic, iθ, θ, λb)
 
             # save result_data
             write_result_data(result_data, fname)

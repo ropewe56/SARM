@@ -458,7 +458,7 @@ function integrate_along_path(spec::Spectrum, iN, iθ, NCO2, θ)
 
             vϵ[iλ]  = ϵ
             vκ[iλ]  = κ
-            vIκ[iλ] = I_λ[iλ] * κ
+            vIκ[iλ] = Iλb[iλ] * κ
         end # loop over λ
         #@infoe I_λ[div(nb_λ,2)], sum(I_λ)
 

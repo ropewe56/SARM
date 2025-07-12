@@ -66,11 +66,7 @@ function LineData(outpath, λmin, λmax, iso_max)
     # Einstein coefficient of absorption
     B12 = @. g2 / g1 * B21;
 
-    iso_max = 11
-    lid_min_max = extrema(lid)
-    niso = min(lid_min_max[2] - lid_min_max[1] + 1, iso_max)
-
-    index = @.ifelse(lid <= niso, true, false)
+    index = @.ifelse(lid > 0 && lid <= iso_max, true, false)
     mid   = mid[index]
     lid   = lid[index]
     ν21   = ν21[index]

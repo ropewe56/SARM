@@ -4,6 +4,7 @@ using PhysConst
 include("../utils.jl")
 
 struct Atmosphere
+    h_iout:: Vector{Int64}
     h     :: Vector{Float64}
     p     :: Vector{Float64}
     T     :: Vector{Float64}
@@ -178,7 +179,8 @@ function Atmosphere(par)
     chitp1 = H2O_concentration(h)
     chitp2 = CO2_concentration(h)
 
-    Atmosphere(h, p, T, N, [chitp1, chitp2])
+    h_iout = ones(Int64, length(h))
+    Atmosphere(h_iout, h, p, T, N, [chitp1, chitp2])
 end
 
 #par = parameter()

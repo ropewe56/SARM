@@ -9,6 +9,7 @@ using Parameters
     CO2out = joinpath(datadir, "CO2", "CO2_rwfmt_ISO-0-12_wl-12-18-mum.out")
 
     outdir        = "/home/wester/Projects/Julia/Climate-Energy/SARM/radoutput"
+    logfile       = "/home/wester/Projects/Julia/Climate-Energy/SARM/log.out"
     intensity_dir = joinpath(outdir, "intensity")
     planck_single = "planck_single.hdf5"
     planck_multi  = "planck_multi.hdf5"

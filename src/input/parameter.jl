@@ -22,6 +22,7 @@ planck_Ts = [288.0, 260.0, 240.0, 220.0]
     initial_intensity   :: Symbol                  = :planck
     TQmin               :: Int64                   = 200.0
     TQmax               :: Int64                   = 300.0
+    κΔs_limit           :: Float64                 = 0.01
     p_ref               :: Float64                 = 1.06e5
     T_ref               :: Float64                 = 288.0
     albedo              :: Float64                 = 0.3

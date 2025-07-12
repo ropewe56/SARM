@@ -26,14 +26,22 @@ end
     vκ        - Vector of spectral absorption
     vIκ       - Vector of spectral intensity x spectral absorption
 """
-function add_results(res::Results, dλ, z, NCO2, θ, T, N, ΔλL_mean, ΔλD_mean, I_λ, vϵ, vκ, vIκ)
+function add_results(res::Results, dλ, z, NCO2, θ, T, N, ΔλL_mean, ΔλD_mean, Iλb, ϵb, κb,)
     nλ     = length(I_λ)
 
+    Iκ1 = Iλb .* κb[1] 
+    Iκ2 = Iλb .* κb[2]
+
     # integrate over all wavelengths
-    int_I  = sum(I_λ)*dλ
-    int_ϵ  = sum(vϵ)*dλ
-    int_κ  = Statistics.mean(vκ)
-    int_Iκ = sum(vIκ)*dλ
+    int_I   = sum(Iλb)*dλ
+
+    int_ϵ1  = sum(ϵb[1])*dλ
+    int_κ1  = Statistics.mean(I1)
+    int_Iκ1 = sum(Iκ1)*dλ
+
+    int_ϵ2  = sum(ϵb[1])*dλ
+    int_κ2  = Statistics.mean(I2)
+    int_Iκ2 = sum(Iκ2)*dλ
 
     # integrate over nλ/6,...,nλ-nλ/6  wavelengths
     n1 = floor(Int64, nλ/6)
