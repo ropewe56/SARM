@@ -1,0 +1,6 @@
+integrate
+    integrate_along_path
+        initial_intensity
+        get_concentrations
+        compute_lines_emission_and_absorption
+        integrate_intensity_over_Δs

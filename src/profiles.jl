@@ -22,9 +22,9 @@ end
 end
 
 function fv(g::GaussProfile, λ::Vector{Float64}, λ0)
-    Δλ = gp.Δλ0 * λ0
-    c  = gp.ln2 / Δλ^2
-    @. gp.dπ * sqrt(c) * exp(- c *(λ - λ0)^2)
+    @fastmath Δλ = gp.Δλ0 * λ0
+    @fastmath c  = gp.ln2 / Δλ^2
+    @fastmath @. gp.dπ * sqrt(c) * exp(- c *(λ - λ0)^2)
 end
 
 
@@ -38,8 +38,8 @@ end
 end
 
 @inline function fv(l::LorentzProfile, λ::Vector{Float64}, λ0)
-    dλ = @. (λ - λ0)/l.ΔλL
-    @. 1.0 / (π * l.ΔλL * (dλ^2 + 1.0))
+    @fastmath dλ = @. (λ - λ0)/l.ΔλL
+    @fastmath @. 1.0 / (π * l.ΔλL * (dλ^2 + 1.0))
 end
 
 mutable struct VoigtProfile

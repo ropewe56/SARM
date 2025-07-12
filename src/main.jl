@@ -25,6 +25,6 @@ CO2_line_data = LineData(paths.CO2out, par.λmin, par.λmax, length(mdCO2.iso_a)
 
 moleculardata = [mdH2O, mdCO2];
 linedata = [H2O_line_data, CO2_line_data];
-    
-#    integrate(par, paths, atm, moleculardata, linedata)
+
+integrate(par, paths, atm, moleculardata, linedata)
 #end

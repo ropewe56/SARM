@@ -8,11 +8,18 @@ using Parameters
     H2Oout = joinpath(datadir, "H2O", "H2O_rwfmt_ISO-0-1.out")
     CO2out = joinpath(datadir, "CO2", "CO2_rwfmt_ISO-0-12_wl-12-18-mum.out")
 
-    outdir        = "/home/wester/Projects/Julia/Climate-Energy/SARM/radoutput"
-    logfile       = "/home/wester/Projects/Julia/Climate-Energy/SARM/log.out"
-    intensity_dir = joinpath(outdir, "intensity")
-    planck_single = "planck_single.hdf5"
-    planck_multi  = "planck_multi.hdf5"
+    results   = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results"
+    intensity = joinpath(results, "intensity")
+    spectrum  = joinpath(results, "spectrum")
+    atm       = joinpath(results, "atm")
+
+    logfile       = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/log.out"
+    planck_single = joinpath(results,"planck_single.hdf5")
+    planck_multi  = joinpath(results,"planck_multi.hdf5")
 end
 
-paths = OutPaths()
+#paths = OutPaths()
+#mkpath(paths.results   )
+#mkpath(paths.intensity)
+#mkpath(paths.spectrum )
+#mkpath(paths.atm      )
