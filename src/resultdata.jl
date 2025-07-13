@@ -90,7 +90,7 @@ end
 """
 z, NCO2, θ, T, N, I_mean, ϵ_mean, κ_mean, ΔλL_mean, ΔλD_mean
 """
-function write_result_data(res::Results, fname)
+function write_result_data(res::Results, hdf5_path)
     n = size(res.data, 1)
     if n > 0
         N = length(res.data[1])
@@ -100,14 +100,8 @@ function write_result_data(res::Results, fname)
                 a[i,j] = res.data[j][i]
             end
         end
-        ext = splitext(fname)[2]
-        if ext == ".npy"
-            write_npy(fname, a)
-        elseif ext == ".hdf5"
-            save_array_as_hdf5(fname, a)
-        else
-            @warne @sprintf("File with extension [%s] cannot be not saved!", ext)
-        end
+        groups = Dict("a" => Dict("a" => a))
+        save_groups_as_hdf5(hdf5_path, groups)
     else
         @warne "empty result_data!"
     end

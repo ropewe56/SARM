@@ -1,12 +1,6 @@
 using Parameters
 
-
 const ppm = 1.0e-6
-ch0H2O = 0.007966
-#        H2O     CO2
-cc = [  [ch0H2O, 278.0*ppm], 
-        [ch0H2O, 430.0*ppm], 
-        [ch0H2O, 278.0*2.0*ppm]]
 
 θ = deg2rad.(Vector{Float64}([0.0, 40.0, 80.0]))
 planck_Ts = [288.0, 260.0, 240.0, 220.0]
@@ -32,7 +26,7 @@ planck_Ts = [288.0, 260.0, 240.0, 220.0]
     with_emission       :: Bool                    = true
     integrate           :: Bool                    = true
     θ                   :: Vector{Float64}         = θ
-    c_ppm               :: Vector{Vector{Float64}} = cc
+    c_ppm               :: Matrix{Float64}         = zeros(Float64, 0, 0)
     hmethod             :: Symbol                  = :equalnumber
     hmin                :: Float64                 = 0.0
     hmax                :: Float64                 = 70000.0
@@ -40,4 +34,19 @@ planck_Ts = [288.0, 260.0, 240.0, 220.0]
     dhmax               :: Float64                 = 20000.0
     e                   :: Float64                 = 2.0
     nh                  :: Int64                   = 50
+    prealloc            :: Preallocated            = Preallocated()
 end
+
+function set_concentrations(cc)
+    len = []
+    for c in cc
+        push!(len, length(c))
+    end
+    lmax = maximum(len)
+    m = []
+    for c in cc
+        push!(m, if length(c) < lmax repeat(c, lmax) else c end)
+    end
+    reduce(hcat, m)' .* ppm
+end
+

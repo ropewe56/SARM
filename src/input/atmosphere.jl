@@ -9,13 +9,7 @@ struct Atmosphere
     p     :: Vector{Float64}
     T     :: Vector{Float64}
     N     :: Vector{Float64}
-    chitp :: Vector{Interpolations.Extrapolation}
-end
-
-function get_densities(atm, h, c0)
-    c1 = H2O_concentration(h; c0=-1.0)
-    c2 = CO2_concentration(h; c0=c0)
-    N*c1, N*c2
+    c     :: Dict{Symbol, Vector{Float64}}
 end
 
 """
@@ -90,36 +84,6 @@ function make_h_log10(par)
     h
 end
 
-function H2O_concentration(h)
-    h = reverse([84.977, 76.278, 67.577, 32.608, 41.176, 52.132, 13.792, 11.565, 8.095, 6.142, 3.77, 1.952, 0.137].*1.0e3)
-    c_log10 = reverse([-5.8683, -5.5885, -5.4074, -5.3251, -5.3086, -5.2757, -5.1934, -4.6173, -3.465, -3.0864, -2.642, -2.3951, -2.0988])
-
-    index = sortperm(h)
-    h2  = h[index]
-    c_log10 = c_log10[index]
-
-    c   = 10.0.^c_log10
-    c1  = c ./ maximum(c)
-    c2  = log10.(c1)
-    linear_interpolation(h2, c2, extrapolation_bc = Line())
-end
-
-function CO2_concentration(h)
-    h = [0.0, 10000.0, 70000.0]
-    c = [1.0, 2.0/3.0, 2.0/3.0]
-    linear_interpolation(h, c, extrapolation_bc = Line())
-end
-
-function get_concentrations(atm, h, ch0)
-    ch1 = 10.0.^(atm.chitp[1](h))
-    ch2 = 10.0.^(atm.chitp[2](h))
-
-    ch1 = ch1 * ch0[1]
-    ch2 = ch2 * ch0[2]
-
-    [ch1, ch2]
-end
-
 """
     get_hTpN(nh)
 
@@ -137,21 +101,22 @@ function get_pT_interpolator()
             13.0,  14.0,  15.0,  16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 70.0]
     p1 = [1013.0, 902.0, 802.0, 710.0, 628.0, 554.0, 487.0, 426.0, 372.0, 324.0, 281.0, 243.0, 209.0,
            179.0, 153.0, 130.0, 111.0, 95.0, 81.2, 69.5, 59.5, 51.0, 43.4, 27.7, 13.2, 6.52, 3.33, 1.76, 0.951, 0.067]
-    x0  = h1 .* 1.0e3
-    y0  = p1 .* 1.0e2
-    
-    ip_hp = linear_interpolation(x0, y0, extrapolation_bc = Line())
+    h1 = h1 .* 1.0e3
+    p1 = p1 .* 1.0e2    
+    ip_hp = linear_interpolation(h1, p1, extrapolation_bc = Line())
 
     # T over h
-    x0 = [0.0, 13.0, 17.0, 25.0, 30.0, 45.0, 50.0, 70.0] .* 1.0e3
-    y0 = [288.0, 215.8, 215.7, 225.1, 233.7, 269.9, 275.7, 218.1]
-    ip_hT = linear_interpolation(x0, y0, extrapolation_bc = Line())
+    h2 = [0.0, 13.0, 17.0, 25.0, 30.0, 45.0, 50.0, 70.0] .* 1.0e3
+    T2 = [288.0, 215.8, 215.7, 225.1, 233.7, 269.9, 275.7, 218.1]
+    ip_hT = linear_interpolation(h2, T2, extrapolation_bc = Line())
 
-    ip_hp, ip_hT
+    ip_hp, ip_hT, h1, p1, h2, T2
 end
 
 function Atmosphere(par)
-    ip_hp, ip_hT = get_pT_interpolator()
+    ip_hp, ip_hT, h1, p1, h2, T2 = get_pT_interpolator()
+    T12 = ip_hT.(h1)
+    N12 = @. p1 / (c_kB * T12)
 
     h = if par.e == :e
         make_h_e(par)
@@ -160,27 +125,38 @@ function Atmosphere(par)
     elseif par.hmethod == :log10
         make_h_log10(par)
     elseif par.hmethod == :equalnumber
-        h = collect(range(par.hmin, par.hmax, par.nh*10))
-        p, T, = ip_hp.(h), ip_hT.(h)
+        np = par.nh*100
+
+        h = collect(range(par.hmin, par.hmax, np))
+        p = ip_hp.(h)
+        T = ip_hT.(h)
         N = @. p / (c_kB * T)
 
-        np = par.nh*10
-        x0 = sqrt.(reverse(N))
-        y0 = reverse(h)
-        x, y, ip_Nh = lininterp(x0, y0, np)
-        h = reverse(y)
-        N = reverse(x).^2
-        h
+        # >> number of particles within a bin
+        hh = @. 0.5 * (h[2:end] + h[1:end-1])
+        dh = (h[2:end] - h[1:end-1])
+        Nh = @. 0.5*(N[2:end] + N[1:end-1]) * dh
+        h2, N2, ip = lininterp(hh, Nh, np)
+        h3 = collect(range(h[1], h[end], np)) 
+        N3 = ip.(h3)
+        # << number of particles within a bin
+
+        # >> interpolate N, h
+        Ni, hi, ip = lininterp(reverse(N3), reverse(h3), np) # knot vectors must be uinique and increasing
+        # equidistant number of particles within a bin
+        x1, x2 = 0.05, 3.0
+        ff = collect(range(x1, 1.0, par.nh)).^x2
+        fff = @. (ff - ff[1]) / (ff[end] - ff[1])
+        Nii = @. (1.0 - fff) * Ni[1] + fff * Ni[end]
+        hii = reverse(ip.(Nii))
+        # << interpolate N, h
+
     end
-
-    p, T, = ip_hp.(h), ip_hT.(h)
+    p = ip_hp.(h)
+    T = ip_hT.(h)
     N = @. p / (c_kB * T)
-
-    chitp1 = H2O_concentration(h)
-    chitp2 = CO2_concentration(h)
-
     h_iout = ones(Int64, length(h))
-    Atmosphere(h_iout, h, p, T, N, [chitp1, chitp2])
+    Atmosphere(h_iout, h, p, T, N, Dict(:H2O => cH20, :CO2 => cCO2))
 end
 
 #par = parameter()

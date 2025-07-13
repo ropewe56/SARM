@@ -27,9 +27,14 @@ function write_to_hdf5(paths, atm, outid, ih, iN, iθ, md, λb, Iλb, κb, ϵb)
 
     sepctrumname = @sprintf("spectrum_%03d_%03d_%d_%d_%5.3e", outid, ih, iN, iθ, atm.h[ih])
     hdf5_path = joinpath(paths.results, "spectrum", sepctrumname)
-    groups_spec = Dict( "Ib"         => Dict("wl"    => λb,     "Ib" => Iλb), 
-                        "kappa_eps1" => Dict("kappa" => κb[1], "eps" => ϵb[1]),
-                        "kappa_eps2" => Dict("kappa" => κb[2], "eps" => ϵb[2]))
-        
+
+    d = Dict("wl" => λb, "I" => Iλb)
+    for i in eachindex(κb)
+        k = @sprintf("kappa_%s", i)
+        e = @sprintf("eps_%s", i)
+        d[k] = κb[i]
+        d[e] = ϵb[i]
+    end
+    groups_spec = Dict( "I" => d)
     save_groups_as_hdf5(hdf5_path, groups_spec; permute_dims_p=false, extension=".hdf5", script_dir=false)    
 end

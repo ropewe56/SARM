@@ -146,7 +146,8 @@ function save_lines_data_as_hdf5(ld::LineData, fname)
         a[23, iline] = ldv[i_ϵ   ]
         a[24, iline] = ldv[i_κ   ]
     end
-    save_array_as_hdf5(a, fname, script_dir=false)
+    groups = Dict("lines" => Dict("data" => a))
+    save_groups_as_hdf5(fname, groups)
 end
 
 function wavelengths_histogram(ld::LineData, nbins, hdf5_path)

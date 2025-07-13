@@ -1,5 +1,10 @@
 using SimpleLog
 using SpecialFileIO
+using PhysConst
+using SpecialFileIO
+
+import PyPlot as plt
+plt.pygui(true)
 
 @doc raw"""
     Planck intensity at temperature temp and wavelength λ
@@ -13,9 +18,11 @@ I = \dfrac{2 π  h  c^2}{λ^5} \dfrac{1}{\exp\left(\dfrac{h  c}{k_B T λ} - 1 \r
     b = c_h * c_c / (c_kB * T)
     a / λ^5 / (exp(b/λ) - 1.0)
 end
+
 @inline function planck_λ(T::Float64, λ::Vector{Float64})
     a = 2.0 * π * c_h * c_c^2
     b = c_h * c_c / (c_kB * T)
+    eb = @. exp(b/λ)
     @. a / λ^5 / (exp(b/λ) - 1.0)
 end
 

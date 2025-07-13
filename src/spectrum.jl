@@ -102,10 +102,10 @@ function compute_lines_emission_and_absorption(moleculardata::Vector{MolecularDa
     for ispecies in eachindex(linedata)
         ldspecies, Qinpspecies, cspecies, mspecies = linedata[ispecies], moleculardata[ispecies].Qinp, cch0[ispecies], moleculardata[ispecies].iso_m;
 
-        nλl  = length(linedata[ispecies].λ210)
-        ld_pTN  = Vector{SVector{9, Float64}}(undef, length(linedata[ispecies].λ210))
-        ΔλLs = Vector{Float64}(undef, nλl)
-        ΔλDs = Vector{Float64}(undef, nλl)
+        nλl    = length(linedata[ispecies].λ210)
+        ld_pTN = Vector{SVector{9, Float64}}(undef, length(linedata[ispecies].λ210))
+        ΔλLs   = Vector{Float64}(undef, nλl)
+        ΔλDs   = Vector{Float64}(undef, nλl)
 
         iλ = 1
         #Threads.@threads 
@@ -141,10 +141,9 @@ function sum_over_lines(par, lines, T, λb)
     dλ  = λb[2] - λ1
     nλb = length(λb)
 
-    κbt = zeros(Float64, nλb, Threads.nthreads())
-    ϵbt = zeros(Float64, nλb, Threads.nthreads())
-    fbt = zeros(Float64, nλb, Threads.nthreads())
-
+    κbt = alloc2(par.prealloc, :κbt, nλb, Threads.nthreads(), true)
+    ϵbt = alloc2(par.prealloc, :ϵbt, nλb, Threads.nthreads(), true)
+    fbt = alloc2(par.prealloc, :fbt, nλb, Threads.nthreads(), true)
 
     # λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, mass, Float64(mid)
 
@@ -187,8 +186,8 @@ function sum_over_lines(par, lines, T, λb)
         end
     end
 
-    κb = zeros(Float64, nλb)
-    ϵb = zeros(Float64, nλb)
+    κb = alloc1(par.prealloc, :κb, nλb, true)
+    ϵb = alloc1(par.prealloc, :ϵb, nλb, true)
     for tid in 1:Threads.nthreads()
         for iλ in 1:nλb
             κb[iλ] += κbt[iλ, tid]
@@ -302,7 +301,7 @@ function integrate_along_path(par, paths, atm, moleculardata, linedata, ch0, res
         t1 = CPUtime_us()
 
         # >> 1
-        cch0 = get_concentrations(atm, atm.h[ih], ch0)
+        cch0 = get_concentrations(moleculardata, ch0)
         # << 1
         
         # >> 1  pressure, temperature and density at height = z
@@ -321,15 +320,12 @@ function integrate_along_path(par, paths, atm, moleculardata, linedata, ch0, res
         # << 1
 
         t2 = CPUtime_us()
-    
         # >> 2
         # No4
         # linedata_pTN: Vector{Vector{SVector{9, Float64}}}(undef, nb_species)
         # SVector: λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, mass
         linedata_pTN, ΔλL_mean, ΔλD_mean = compute_lines_emission_and_absorption(moleculardata, linedata, cch0, T, N, p);
         # << 2
-
-        
         t3 = CPUtime_us()
 
         # >> No6
@@ -340,9 +336,8 @@ function integrate_along_path(par, paths, atm, moleculardata, linedata, ch0, res
             κb[ispec], ϵb[ispec] = sum_over_lines(par, lines, T, λb)
         end
         # << 3
-
         t4 = CPUtime_us()
- 
+        
         # 4
         add_background()
         t5 = CPUtime_us()
@@ -385,15 +380,16 @@ function integrate_along_path(par, paths, atm, moleculardata, linedata, ch0, res
         t7 = CPUtime_us()
         
         ts = [t1, t2, t3, t4, t5, t6, t7]
-        str = []
+        str = ["cputime"]
         for i in eachindex(ts[1:end-1])
             push!(str, @sprintf("%d:%8.2e", i, ts[i+1] - ts[i]))
         end
         @infoe join(str, ", ")
     end  # lop over z ih
+    
     end # @time
 
-    result_data
+    results
 end
 
 """
@@ -425,8 +421,8 @@ function integrate(par::RunParameter, paths::OutPaths, atm::Atmosphere, molecula
     result_id = 0
     ic    = 1
     iθ, θ = 1, 0.0
-    for ic in eachindex(par.c_ppm)
-        ch0 = par.c_ppm[ic]
+    for ic in 1:size(par.c_ppm,2)
+        ch0 = par.c_ppm[:,ic]
         # loop over angles
         for (iθ, θ) in enumerate(par.θ)
             result_id = result_id + 1

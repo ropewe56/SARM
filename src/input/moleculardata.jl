@@ -5,12 +5,56 @@ using Interpolations
 using DataFrames
 using CSV
 
+const ch0H2O_ppm = 7966.0
+
 struct MolecularData
-    Qinp       
+    Qh       :: Vector{Vector{Float64}}
+    ch       :: Vector{Float64}
     iso_id   :: Vector{Int64}
     iso_a    :: Vector{Float64}
     iso_m    :: Vector{Float64}
     gj       :: Vector{Int64}
+end
+
+function H2O_concentration(hi)
+    h = reverse([84.977, 76.278, 67.577, 32.608, 41.176, 52.132, 13.792, 11.565, 8.095, 6.142, 3.77, 1.952, 0.137].*1.0e3)
+    c_log10 = reverse([-5.8683, -5.5885, -5.4074, -5.3251, -5.3086, -5.2757, -5.1934, -4.6173, -3.465, -3.0864, -2.642, -2.3951, -2.0988])
+
+    index = sortperm(h)
+    h2    = h[index]
+    cl = c_log10[index]
+    itp = linear_interpolation(h2, cl, extrapolation_bc = Line())
+
+    cli = itp(hi)
+    ci = 10.0.^cli
+    ci
+end
+
+function CO2_concentration(hi)
+    h = [0.0, 10000.0, 70000.0]
+    c = [1.0, 2.0/3.0, 2.0/3.0]
+    itp = linear_interpolation(h, c, extrapolation_bc = Line())
+    itp(hi)
+end
+
+function get_molcule_concentration(molecule, hi)
+    ci = if molecule == :H2O
+        H2O_concentration(hi)
+    elseif molecule == :CO2
+        CO2_concentration(hi)
+    else
+        @error molecule, "not implemented"
+    end
+    ci .* ppm
+end
+
+
+function get_concentrations(moleculardata, ih)
+    ch = []    
+    for im in eachindex(moleculardata)
+        push!(ch, moleculardata[im].ch[ih] * ch0[im])
+    end
+    ch
 end
 
 function get_sorted_q_files(root)
@@ -56,12 +100,12 @@ end
     n  -- number of T,Q pairs to make
     returns T, Q -- [description]
 """
-function MolecularData(isopath, TQmin, TQmax)
+function MolecularData(molecule, ch0_ppm, atm, isopath, TQmin, TQmax)
     iso_id, iso_a, iso_m, gj, qpaths = load_Isotope_file(isopath)
         
     niso = min(length(iso_id), length(qpaths))
 
-    Qinp = []
+    Qh = []
     # read the partition function files
     for i in 1:niso
         fpath = joinpath(dirname(isopath), qpaths[i])        
@@ -80,10 +124,13 @@ function MolecularData(isopath, TQmin, TQmax)
         T = T[index]
         Q = Q[index]
         lip = linear_interpolation(T, Q, extrapolation_bc = Line())
-
-        push!(Qinp, lip)
+        Q = lip.(atm.T)
+        push!(Qh, Q)
     end
-    MolecularData(Qinp, iso_id, iso_a, iso_m, gj)
+
+    ch = get_molcule_concentration(molecule, hi) .* ch0_ppm
+    
+    MolecularData(Qh, ch, iso_id, iso_a, iso_m, gj)
 end
 
 

@@ -18,8 +18,18 @@ using Parameters
     planck_multi  = joinpath(results,"planck_multi.hdf5")
 end
 
-#paths = OutPaths()
-#mkpath(paths.results   )
-#mkpath(paths.intensity)
-#mkpath(paths.spectrum )
-#mkpath(paths.atm      )
+function OutPaths(results)
+    intensity = joinpath(results, "intensity")
+    spectrum  = joinpath(results, "spectrum")
+    atm       = joinpath(results, "atm")
+    paths     = OutPaths()
+    paths.results   = results
+    paths.intensity = intensity
+    paths.spectrum  = spectrum 
+    paths.atm       = atm      
+    mkpath(paths.results)
+    mkpath(paths.intensity)
+    mkpath(paths.spectrum)
+    mkpath(paths.atm)
+    paths
+end
