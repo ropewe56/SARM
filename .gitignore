@@ -1,7 +1,9 @@
 HITRAN/
 build/
+stash/
 radinput/
 radoutput/
+results*/
 *.synctex.gz
 target/
 Cargo.lock

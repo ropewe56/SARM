@@ -8,11 +8,11 @@ function make_outpaths(results)
     mkpath(atm)
 
     (
-     results       =  results,
+     results       = results,
      intensity     = intensity,
-     spectrum      = spectrum ,
+     spectrum      = spectrum,
      atm           = atm,
-     logfile       = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/log.out",
+     logfile       = joinpath(results, "log.out"),
      planck_single = joinpath(results,"planck_single.hdf5"),
      planck_multi  = joinpath(results,"planck_multi.hdf5")
     )
