@@ -6,7 +6,7 @@ using DataFrames
 using CSV
 
 struct LineData
-    mid   :: Vector{Int64}
+    species :: Symbol
     lid   :: Vector{Int64}
     ν21   :: Vector{Float64}
     λ210  :: Vector{Float64}
@@ -35,7 +35,7 @@ end
 """
 #outpath = paths.CO2out
 #λmin, λmax = par.λmin, par.λmax
-function LineData(outpath, λmin, λmax, iso_max)
+function LineData(species, outpath, λmin, λmax, iso_max)
     # molec_id, local_iso_id, nu        , sw       ,a    , gamma_air, gamma_self, elower    , n_air, delta_air , gp  , gpp
     # 2       , 5           , 555.003645, 7.486e-31,0.214, 0.0672   , 0.078     , 3244.5786 , 0.75 , -0.000716 , 170 , 170
     df0 = CSV.read(outpath, DataFrame)
@@ -66,7 +66,10 @@ function LineData(outpath, λmin, λmax, iso_max)
     # Einstein coefficient of absorption
     B12 = @. g2 / g1 * B21;
 
-    index = @.ifelse(lid > 0 && lid <= iso_max, true, false)
+    iso_min = 1
+    iso_max = min(maximum(lid), iso_max)
+
+    index = @.ifelse(lid >= iso_min && lid <= iso_max, true, false)
     mid   = mid[index]
     lid   = lid[index]
     ν21   = ν21[index]
@@ -88,7 +91,7 @@ function LineData(outpath, λmin, λmax, iso_max)
 
     index = sortperm(λ210)
 
-    LineData(   mid[index],
+    LineData(   species,
                 lid[index],
                 ν21[index],
                 λ210[index],

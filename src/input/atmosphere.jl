@@ -9,7 +9,6 @@ struct Atmosphere
     p     :: Vector{Float64}
     T     :: Vector{Float64}
     N     :: Vector{Float64}
-    c     :: Dict{Symbol, Vector{Float64}}
 end
 
 """
@@ -156,7 +155,7 @@ function Atmosphere(par)
     T = ip_hT.(h)
     N = @. p / (c_kB * T)
     h_iout = ones(Int64, length(h))
-    Atmosphere(h_iout, h, p, T, N, Dict(:H2O => cH20, :CO2 => cCO2))
+    Atmosphere(h_iout, h, p, T, N)
 end
 
 #par = parameter()
