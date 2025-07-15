@@ -40,8 +40,35 @@ function compute_planck(T::Union{Float64,Vector{Float64}}, λ::Vector{Float64})
 end
 
 function save_planck_as_hdf5(hdf5_path::String, T::Union{Float64,Vector{Float64}}, λ::Vector{Float64}, I::Union{Vector{Float64},Matrix{Float64}})
-    groups = Dict("intensity" => Dict("T" => T, "wl" => λ, "I" => I))
+    groups = Dict("TλI" => Dict("T" => T, "λ" => λ, "I" => I))
     save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    
+end
+
+function create_planck_spectrum(par, λb)
+    λ1 = 1.0e-6
+    λ2 = 30.0*λ1
+    nλ = 1000
+    λP = collect(range(λ1, λ2, nλ))
+    Δλ = λP[2] - λP[1]
+
+    IP = planck_λ(par.surface_T, λP)
+    save_planck_as_hdf5(par.paths.planck_single, par.surface_T, λP, IP .* Δλ)
+
+    IPb = compute_planck(par.planck_Ts, λb)
+    Δλ = λb[2] - λb[1]
+    save_planck_as_hdf5(par.paths.planck_multi, par.planck_Ts, λb, IPb .* Δλ)
+end
+
+function initial_intensity(par, λb)
+    Iλb = if par.initial_intensity == :planck
+        Iλb = planck_λ(par.surface_T, λb)
+        Iλb .* (1.0 - par.albedo)
+    else
+        zeros(Float64, length(λλ))
+    end
+    Δλ = λb[2] - λb[1]
+    save_planck_as_hdf5(joinpath(par.paths.initial_intensity), par.planck_Ts, λb, λb .* Δλ)
+    Iλb
 end
 
 function test_planck()

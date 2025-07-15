@@ -34,12 +34,11 @@ pTs = [288.0, 260.0, 240.0, 220.0]
     e                   :: Float64                      = 2.0
     nh                  :: Int64                        = 50
     prealloc            :: Preallocated                 = Preallocated()
+    outdir              :: String                       = "results"
     paths               :: NamedTuple                   = NamedTuple()
 end
 
-function make_parameter(outdir)
+function set_paths!(rp, outdir)
     paths = make_outpaths(outdir)
-    rp = RunParameter()
     rp.paths = paths
-    rp
 end

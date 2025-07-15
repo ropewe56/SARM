@@ -19,16 +19,16 @@ function save_spectrum_as_hdf5(hdf5_path1, hdf5_path2, λb, Iλb, κb, ϵb, md)
 end
 
 function write_atm_to_hdf5(paths, atm)
-    hdf5_path = joinpath(paths.results, "atm.hdf5")
+    hdf5_path = joinpath(paths.atm, "atm.hdf5")
     groups = Dict("atm" => Dict("h" => atm.h, "p" => atm.p, "T" => atm.T, "N" => atm.N))
     save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    
 end
 
-function write_results_to_hdf5(paths, atm, outid, ih, iN, iθ, λb, Iλb, κbs, ϵbs)
-    spectrum_name = @sprintf("spectrum_%03d_%03d_%d_%d_%4.1f.hdf5", outid, ih, iN, iθ, atm.h[ih]*1.0e-3)
-    hdf5_path = joinpath(paths.results, "spectrum", spectrum_name)
+function write_results_to_hdf5(paths, atm, ic, iθ, ih, λb, Iλb, κb, ϵb, κbs, ϵbs)
+    spectrum_name = @sprintf("spectrum_%03d_%d_%d_%4.1f.hdf5", ic, iθ, ih, atm.h[ih]*1.0e-3)
+    hdf5_path = joinpath(paths.spectrum, spectrum_name)
 
-    d = Dict("wl" => λb, "I" => Iλb)
+    d = Dict("wl" => λb, "I" => Iλb, "k" => κb, "e" => ϵb)
     for (spec, val) in κbs
         k = @sprintf("k_%s", spec)
         e = @sprintf("e_%s", spec)
@@ -36,5 +36,6 @@ function write_results_to_hdf5(paths, atm, outid, ih, iN, iθ, λb, Iλb, κbs, 
         d[e] = ϵbs[spec]
     end
     groups = Dict( "I" => d)
-    save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    
+    save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)
+    hdf5_path
 end
