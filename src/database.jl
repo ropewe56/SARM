@@ -21,7 +21,6 @@ end
 function ResultDB(dbpath, csih)
     if isfile(dbpath)
         @warne "database", dbpath, "exists"
-        return SQLite.DB(dbpath)
     end
 
     colnames = ["hdf5_path", "ic", "iθ", "ih", "h", "θ",   "T",  "N", "species"]
@@ -52,6 +51,11 @@ function ResultDB(dbpath, csih)
     rowqm = "?"*repeat(", ?", length(columns.name)-1)
 
     ResultDB(dbpath, db, cln, rowqm, species)
+end
+
+function create_results_db(par)
+    rdb = ResultDB(par.paths.dbpath, par.c_ppm)
+    rdb
 end
 
 function open_db(dbpath)

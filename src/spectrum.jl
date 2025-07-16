@@ -81,9 +81,10 @@ end
 """
 No5
 """
-function compute_line_emission_and_absorption_iλ(ld::LineData, Qiso, miso, c, T, N, p, T_ref, iλ)
+function compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
+    βr = 1.0/(c_kB * TREF)
 
     #                  1      2   3     4  5     6    7    8    9    10   11   12    13    14    15     16
     #lines[i] = SA_F64[λ_ul0, E_l, E_u, S, A_ul, γ_a, γ_s, n_a, δ_a, g_u, g_l, B_ul, B_lu, ΔλL0, iso_m, iso_c]
@@ -92,6 +93,7 @@ function compute_line_emission_and_absorption_iλ(ld::LineData, Qiso, miso, c, T
     E1    = ld.E1[iλ]
     E2    = ld.E2[iλ]
     A21   = ld.A21[iλ]
+    S21r  = ld.S21[iλ]
     γair  = ld.γair[iλ]
     γself = ld.γself[iλ]
     nair  = ld.nair[iλ]
@@ -105,25 +107,36 @@ function compute_line_emission_and_absorption_iλ(ld::LineData, Qiso, miso, c, T
     if iso > 11
         @warne mid, lid, λ210
     end
-    λ21 = λ210 / (1.0 + λ210 * δair * p)
 
-    # γ = (Tref/T)^n_{air} (γ_a(p_{ref], T_{ref}) (p - p_{CO2}) + γ_s p_{CO2}(p_{ref], T_{ref})
-    dT = (T_ref/T)^nair
-    γ = dT * (γair * p * (1.0 - c) + γself * p * c)
+    Nspec = c * N
 
-    ΔλL = λ21^2 * γ
+    # pressure shift
+    λ21 = λ210 / (1.0 + δair * λ210 * p)
+
+    # Lorentzian (pressure-broadened) HWHM, γ(p,T) 
+    #γpT = (TREF/T)^nair * (γair * (p - pself) + γself*pself)
+    γp = (TREF/T)^nair * (γair * p * (1.0 - c) + γself * p * c)
+
+    ΔλL = λ21^2 * γp 
     ΔλG = sqrt(2.0 * c_kB * T / miso[iso]) / c_c * λ21
 
-    N1  = g1 * exp(- E1 * β) / Qiso[iso] * c * N
-    N2  = g2 * exp(- E2 * β) / Qiso[iso] * c * N
+    N1  = g1 * exp(- E1 * β) / Qiso[iso] * Nspec
+    N2  = g2 * exp(- E2 * β) / Qiso[iso] * Nspec
 
+    # emission [W/m^3]
     # ϵ_λ = h * c / λ_0 / (4 * π) * N_u * A_ul * f_λ
     ϵ = c_h * c_c / λ21 *  N2 * A21 * dΩ / (4.0 * π)
 
+    # absorption coefficient [1/m]
     # κ_λ = h / λ_0 * N_l * B_lu * (1 - N_u/N_l * g_l/g_u) * λ_0**2 / c * f_λ
     κ = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)
 
-    iso, λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ
+    ΔE21 = E2-E1
+    S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Nspec
+    
+    κ2   = S21 * λ210^2 # [1/m]
+
+    iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ2
 end
 
 @doc raw"""
@@ -143,7 +156,7 @@ Niso = N * NCO2 * iso_c
 λ_ul = λ_ul0 / (1.0 + λ_ul0 * δ_a * p)
 
 # γ = (Tref/T)^n_{air} (γ_a(p_{ref], T_{ref}) (p - p_{CO2}) + γ_s p_{CO2}(p_{ref], T_{ref})
-dT = (par.T_ref/T)^n_a
+dT = (TREF/T)^n_a
 γ = dT * (γ_a * p * (1.0 - NCO2) + γ_s * p * NCO2)
 
 ΔλL = λ_ul^2 * γ
@@ -159,21 +172,11 @@ $κ(λ) = \dfrac{h c}{λ_0} N_l B_{lu}  \left(1 - \dfrac{N_u}{N_l}  \dfrac{g_l}{
 
 No4
 """
-function compute_lines_emission_and_absorption(par, ld::LineData, Qiso, miso, c, T, N, p)
-    nλl = length(ld.λ210)
-
-    ld_pTN = Vector{SVector{9, Float64}}(undef, nλl)
-    ΔλLs = Vector{Float64}(undef, nλl)
-    ΔλDs = Vector{Float64}(undef, nλl)
-
-    iλ = 1
-    Threads.@threads for iλ in 1:nλl
-        iso, λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ = compute_line_emission_and_absorption_iλ(ld, Qiso, miso, c, T, N, p, par.T_ref, iλ)
-        ld_pTN[iλ] = SVector{9,Float64}(λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, miso[iso])
-        ΔλLs[iλ] = ΔλL
-        ΔλDs[iλ] = ΔλG
+function compute_lines_emission_and_absorption!(ML::Matrix{Float64}, par, ld::LineData, Qref, Qiso, miso, c, T, N, p)
+    Threads.@threads for iλ in eachindex(ld.λ210)
+        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ = compute_line_emission_and_absorption_iλ(ld, Qref, Qiso, miso, c, T, N, p, iλ)
+        ML[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ]
     end
-    ld_pTN, ΔλLs, ΔλDs
 end
 
 """
@@ -181,8 +184,9 @@ end
 
     T - temperature
     N - density
+    ML = ML[:CO2]
 """
-function sum_over_lines(par, lines, T, λb)
+function sum_over_lines(par, ML, T, λb)
     λ1   = λb[1]
     λend = λb[end]
     Δλ   = λend - λ1
@@ -194,17 +198,23 @@ function sum_over_lines(par, lines, T, λb)
     fbt = alloc2(par.prealloc, :fbt, nλb, Threads.nthreads(), true)
 
     # λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, mass, Float64(mid)
+    n1, n2 = size(ML)
 
-    Threads.@threads for il in eachindex(lines)
-        λ21  = lines[il][1]      
-        γ    = lines[il][2]    
-        ΔλL  = lines[il][3]      
-        ΔλG  = lines[il][4]      
-        N1   = lines[il][5]     
-        N2   = lines[il][6]     
-        ϵ    = lines[il][7]    
-        κ    = lines[il][8]    
-        mass = lines[il][9]       
+    # [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, m, ϵ, κ]
+
+    il = 1
+    Threads.@threads for il in 1:n2
+        iso  = ML[ 1, il]
+        S21  = ML[ 2, il]
+        λ21  = ML[ 3, il]
+        γ    = ML[ 4, il]
+        ΔλL  = ML[ 5, il]
+        ΔλG  = ML[ 6, il]
+        N1   = ML[ 7, il]
+        N2   = ML[ 8, il]
+        mass = ML[ 9, il]
+        ϵ    = ML[10, il]
+        κ    = ML[11, il]
 
         if λ21 >= λ1 && λ21 <= λend
             iλ = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
@@ -293,10 +303,10 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
     Nmin = 1.0e30
 
     logfio = open(par.paths.logfile, "w")
-    ih = 1
-    h = atm.h[ih]
     cputimes = []
     nh = length(atm.h)
+
+    ih = 1
     for (ih,h) in enumerate(atm.h)
         tt = [time_ns()]
         # >> 1  pressure, temperature and density at height = z
@@ -318,23 +328,31 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
         # No4
         # linedata_pTN: Vector{Vector{SVector{9, Float64}}}(undef, nb_species)
         # SVector: λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, mass
-        κbs = Dict{Symbol, Vector{Float64}}()
-        ϵbs = Dict{Symbol, Vector{Float64}}()
-        ΔλL_mean = Dict{Symbol, Float64}()
-        ΔλD_mean = Dict{Symbol, Float64}()
+
         cihic = Dict{Symbol, Float64}()
+        ML    = Dict{Symbol,Matrix{Float64}}()
         for (spec, cc) in par.c_ppm
             md   = moleculardata[spec]
-            miso = md.iso_m  # Vector
+            miso = md.iso_m       # Vector
             Qiso = md.Qisoh[:,ih] # Vector 
-            c    = md.cnh[ih] * cc[ic] * PPM
-            ld   = linedata[spec]
+            Qref = md.Qref # Vector 
+            cihic[spec] = md.cnh[ih] * cc[ic] * PPM
 
-            ld_pTN, ΔλLs, ΔλDs = compute_lines_emission_and_absorption(par, ld, Qiso, miso, c, T, N, p);
-            κbs[spec], ϵbs[spec] = sum_over_lines(par, ld_pTN, T, λb)
+            nλl = length(linedata[spec].λ210)
+            ML[spec] = Matrix{Float64}(undef, 11, nλl)
+            compute_lines_emission_and_absorption!(ML[spec], par, linedata[spec], Qref, Qiso, miso, cihic[spec], T, N, p);
+        end
+
+        κbs      = Dict{Symbol, Vector{Float64}}()
+        ϵbs      = Dict{Symbol, Vector{Float64}}()
+        ΔλL_mean = Dict{Symbol, Float64}()
+        ΔλD_mean = Dict{Symbol, Float64}()
+        for (spec, cc) in par.c_ppm
+            κbs[spec], ϵbs[spec] = sum_over_lines(par, ML[spec], T, λb)
+            ΔλLs = ML[spec][3,:]
+            ΔλDs = ML[spec][4,:]
             ΔλL_mean[spec] = Statistics.mean(ΔλLs)
             ΔλD_mean[spec] = Statistics.mean(ΔλDs)
-            cihic[spec] = c
         end
         # << 2
         
@@ -358,7 +376,7 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
         push!(tt, time_ns())
 
         hdf5_path = if atm.h_iout[ih] == 1
-            write_results_to_hdf5(par.paths, atm, ic, iθ, ih, λb, Iλb, κb, ϵb, κbs, ϵbs)
+            write_results_to_hdf5(par.paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb, κbs, ϵbs)
         else
             missing
         end
@@ -390,22 +408,17 @@ end
     function integrate(par::RunParameter, atm::Atmosphere, moleculardata::Vector{MolecularData}, linedata::Vector{LineData})
 No1
 """
-function integrate(par::RunParameter, atm::Atmosphere, molecular_data::Dict{Symbol,MolecularData},  line_data::Dict{Symbol,LineData})
+function integrate(par::RunParameter, rdb, atm::Atmosphere, molecular_data::Dict{Symbol,MolecularData},  line_data::Dict{Symbol,LineData})
     nλb = floor(Int64, (par.λmax - par.λmin) / par.Δλb)
     λb  = collect(range(par.λmin, par.λmax, nλb))
     create_planck_spectrum(par, λb)
 
+    cch0 = [par.c_ppm[k][1] for k in keys(par.c_ppm)]
+    nbc = maximum([length(par.c_ppm[k]) for k in keys(par.c_ppm)])
+
     # loop over CO2 concentrations
     ic     = 1
     iθ, θ  = 1, 0.0
-
-    cch0 = [par.c_ppm[k][1] for k in keys(par.c_ppm)]
-    nbc = maximum([length(par.c_ppm[k]) for k in keys(par.c_ppm)])
-    rdb = ResultDB(par.paths.dbpath, par.c_ppm)
-    if rdb === nothing
-        return
-    end
-
     for ic in 1:nbc
         # loop over angles
         for (iθ, θ) in enumerate(par.θ)

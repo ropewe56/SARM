@@ -24,18 +24,30 @@ function write_atm_to_hdf5(paths, atm)
     save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    
 end
 
-function write_results_to_hdf5(paths, atm, ic, iθ, ih, λb, Iλb, κb, ϵb, κbs, ϵbs)
+function write_results_to_hdf5(paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb, κbs, ϵbs)
     spectrum_name = @sprintf("spectrum_%03d_%d_%d_%4.1f.hdf5", ic, iθ, ih, atm.h[ih]*1.0e-3)
     hdf5_path = joinpath(paths.spectrum, spectrum_name)
 
-    d = Dict("wl" => λb, "I" => Iλb, "k" => κb, "e" => ϵb)
+    # ML :     iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ
+
+    d = Dict("λ" => λb, "I" => Iλb, "κ" => κb, "ϵ" => ϵb)
     for (spec, val) in κbs
-        k = @sprintf("k_%s", spec)
-        e = @sprintf("e_%s", spec)
-        d[k] = κbs[spec]
-        d[e] = ϵbs[spec]
+        ks = @sprintf("κ_%s", spec)
+        es = @sprintf("ϵ_%s", spec)
+        d[ks] = κbs[spec]
+        d[es] = ϵbs[spec]
+
+        sl = @sprintf("Sl_%s", spec)
+        ll = @sprintf("λl_%s", spec)
+        kl = @sprintf("κl_%s", spec)
+        el = @sprintf("ϵl_%s", spec)
+        d[sl] = ML[spec][2,:] 
+        d[ll] = ML[spec][3,:] 
+        d[kl] = ML[spec][10,:] 
+        d[el] = ML[spec][11,:] 
     end
-    groups = Dict( "I" => d)
+
+    groups = Dict( "sarm" => d)
     save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)
     hdf5_path
 end

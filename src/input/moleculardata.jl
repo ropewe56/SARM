@@ -12,8 +12,10 @@ const CO2_Q   = joinpath(datadir, "CO2", "CO2_Q", "CO2_Isotopes.txt")
 const H2Oout  = joinpath(datadir, "H2O", "H2O_rwfmt.out")
 const CO2out  = joinpath(datadir, "CO2", "CO2_rwfmt.out")
 
+
 struct MolecularData
     species  :: Symbol
+    Qref     :: Vector{Float64} # at TREF
     Qisoh    :: Matrix{Float64}
     cnh      :: Vector{Float64}
     iso_id   :: Vector{Int64}
@@ -74,6 +76,7 @@ function MolecularData(species, atm, isopath, TQmin, TQmax)
     iso_id, iso_a, iso_m, gj, qpaths = load_Isotope_file(isopath)        
     niso = min(length(iso_id), length(qpaths))
     Qhiso = []
+    Qref = []
     # read the partition function files
     for i in 1:niso
         fpath = joinpath(dirname(isopath), qpaths[i])        
@@ -94,11 +97,12 @@ function MolecularData(species, atm, isopath, TQmin, TQmax)
         lip = linear_interpolation(T, Q, extrapolation_bc = Line())
         Q = lip.(atm.T)
         push!(Qhiso, Q)
+        push!(Qref, lip(TREF))
     end
     Qisoh = reduce(hcat, Qhiso)'
     cnh = get_normalized_molecule_concentration_over_h(species, atm.h)
     
-    MolecularData(species, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
+    MolecularData(species, Qref, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
 end
 
 

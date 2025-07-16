@@ -37,5 +37,6 @@ linedata      = Dict(:H2O => H2O_line_data, :CO2 => CO2_line_data);
 outdir    = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results"
 set_paths!(par, outdir);
 write_atm_to_hdf5(par.paths, atm)
+rdb = create_results_db(par)
 
-integrate(par, atm, moleculardata, linedata)
+integrate(par, rdb, atm, moleculardata, linedata)

@@ -1,21 +1,112 @@
+using SimpleLog
+using SpecialFileIO
+using Printf
 import PyPlot as plt
 plt.pygui(true)
 
-pl = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results/2025-07-15T14:50/planck_single.hdf5"
-plg = load_groups_as_hdf5(pl)
-p = plg["intensity"]
-pλ, pI = p["wl"], p["I"]
-plt.plot(pλ, pI)
+results_root = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results"
 
-dbpath = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results/2025-07-15T14:50/db.sqlite3"
-db = open_db(dbpath)
-for n in names(df) println(n) end
+function get_list()
+    readdir(results_root)
+end
 
-df = select_from_rdb(db, ic=2, iθ=1)
-h = df[!,"h"]
-IH2O = df[!,"int_IH2O"]
-ICO2 = df[!,"int_ICO2"]
+function plot_planck(root, λ1, λ2)
+    path_pls = joinpath(results_root, root, "intensity", "planck_single.hdf5")
+    path_plm = joinpath(results_root, root, "intensity", "planck_multi.hdf5")
+    path_Ii  = joinpath(results_root, root, "intensity", "initial_intensity.hdf5")
 
-plt.plot(h,I)
-plt.plot(h,df[!,"T"])
+    pls = load_groups_as_hdf5(path_pls)
+    plm = load_groups_as_hdf5(path_plm)
+    pli = load_groups_as_hdf5(path_Ii)
 
+    p = pls["TλI"]
+    λs, Is, Ts = p["λ"], p["I"], p["T"]
+
+    p = plm["TλI"]
+    λm, Im, Tm = p["λ"], p["I"], p["T"]
+
+    p = pli["TλI"]
+    λi, Ii, Ti = p["λ"], p["I"], p["T"]
+
+    plt.figure()
+    plt.plot(λs, Is, label = "Is")
+    for (i,T) in enumerate(Tm)
+        plt.plot(λm, Im[:,i], label = @sprintf("T = %5.1f", Tm[i]))
+    end
+    plt.plot(λi, Ii, label = "Ii")
+    if λ1 > 0.0 && λ2 > 0.0
+        plt.xlim(λ1, λ2)
+    end
+    plt.legend()
+end
+
+function get_results(root, ic, iθ, hi)
+    dbpath = joinpath(results_root, root, "db.sqlite3")
+    db = open_db(dbpath)
+    df = select_from_rdb(db, ic=1, iθ=1)
+
+    for n in names(df)
+        @printf("%s  ", n)
+    end
+    @printf("\n")
+
+    h  = df[!,"h"]
+    ih = max(1, min(length(h), argmin(abs.(h .- hi))))
+
+    species = split(df[1,"species"], ",")
+    for spec in species
+        cih = df[!,"cih"*spec][ih]
+        I   = df[!,"int_I"*spec][ih]
+        κ   = df[!,"int_κ"*spec][ih]
+        ϵ   = df[!,"int_ϵ"*spec][ih]
+        Iκ  = df[!,"int_Iκ"*spec][ih]
+        ΔλD = df[!,"ΔλD"*spec][ih]
+        ΔλL = df[!,"ΔλL"*spec][ih]
+        @infoe spec, cih, I, κ, ϵ, Iκ, ΔλL, ΔλD
+    end
+
+    species, df[!,"hdf5_path"], h, ih
+end
+
+function plot_result(hdf5_path)
+    groups = load_groups_as_hdf5(hdf5_path)
+    data = groups["sarm"]
+    keys(data)
+
+    λ = data["λ"]
+    I = data["I"]
+    ϵ = data["ϵ"]
+    κ = data["κ"]
+    ϵ_CO2 = data["ϵ_CO2"]
+    κ_CO2 = data["κ_CO2"]
+
+    λl = data["λl_CO2"]
+    Sl = data["Sl_CO2"]
+    ϵl = data["ϵl_CO2"]
+    κl = data["κl_CO2"]
+
+    plt.figure()
+    plt.plot(λ,I)
+
+    plt.figure()
+    plt.plot(λ,ϵ)
+
+    plt.figure()
+    plt.plot(λ,κ.*I)
+
+    plt.figure()
+    plt.plot(λ,κ)
+
+    plt.figure()
+    plt.plot(λl,Sl.*λl)
+
+    plt.figure()
+    plt.plot(λl,κl)
+end
+
+root = readdir(results_root)[1]
+plot_planck(root, 10.0e-6, 20.0e-6)
+
+species, hdf5_paths, h, ih = get_results(root, 1, 1, 0.0);
+hdf5_path = hdf5_paths[ih]
+plot_result(hdf5_path)

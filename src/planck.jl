@@ -49,14 +49,12 @@ function create_planck_spectrum(par, λb)
     λ2 = 30.0*λ1
     nλ = 1000
     λP = collect(range(λ1, λ2, nλ))
-    Δλ = λP[2] - λP[1]
 
     IP = planck_λ(par.surface_T, λP)
-    save_planck_as_hdf5(par.paths.planck_single, par.surface_T, λP, IP .* Δλ)
+    save_planck_as_hdf5(par.paths.planck_single, par.surface_T, λP, IP)
 
     IPb = compute_planck(par.planck_Ts, λb)
-    Δλ = λb[2] - λb[1]
-    save_planck_as_hdf5(par.paths.planck_multi, par.planck_Ts, λb, IPb .* Δλ)
+    save_planck_as_hdf5(par.paths.planck_multi, par.planck_Ts, λb, IPb)
 end
 
 function initial_intensity(par, λb)
@@ -66,8 +64,7 @@ function initial_intensity(par, λb)
     else
         zeros(Float64, length(λλ))
     end
-    Δλ = λb[2] - λb[1]
-    save_planck_as_hdf5(joinpath(par.paths.initial_intensity), par.planck_Ts, λb, λb .* Δλ)
+    save_planck_as_hdf5(joinpath(par.paths.initial_intensity), par.planck_Ts, λb, Iλb)
     Iλb
 end
 
