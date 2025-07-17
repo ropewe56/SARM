@@ -83,28 +83,46 @@ function plot_result(hdf5_path)
     λl = data["λl_CO2"]
     Sl = data["Sl_CO2"]
     ϵl = data["ϵl_CO2"]
-    κl = data["κl_CO2"]
+    κl1 = data["κl1_CO2"]
+    κl2 = data["κl2_CO2"]
 
     plt.figure()
     plt.plot(λ,I)
+    plt.xlabel("λ")
+    plt.ylabel("I")
 
     plt.figure()
     plt.plot(λ,ϵ)
+    plt.xlabel("λ")
+    plt.ylabel("ϵ")
 
     plt.figure()
     plt.plot(λ,κ.*I)
+    plt.xlabel("λ")
+    plt.ylabel("κ.*I")
 
     plt.figure()
-    plt.plot(λ,κ)
+    plt.plot(λl,ϵl)
+    plt.xlabel("λ")
+    plt.ylabel("ϵl")
 
     plt.figure()
-    plt.plot(λl,Sl.*λl)
+    plt.plot(λl,κl1)
+    plt.xlabel("λ")
+    plt.ylabel("κl1")
 
     plt.figure()
-    plt.plot(λl,κl)
+    plt.plot(λl,κl2)
+    plt.xlabel("λ")
+    plt.ylabel("κl2")
+
+    plt.figure()
+    plt.plot(λl,Sl)
+    plt.xlabel("λ")
+    plt.ylabel("Sl")
 end
 
-root = readdir(results_root)[1]
+root = readdir(results_root)[end]
 plot_planck(root, 10.0e-6, 20.0e-6)
 
 species, hdf5_paths, h, ih = get_results(root, 1, 1, 0.0);

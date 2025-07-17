@@ -78,106 +78,6 @@ function add_background()
 #        end
 end
 
-"""
-No5
-"""
-function compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
-    dΩ = 1.0
-    β  = 1.0/(c_kB * T)
-    βr = 1.0/(c_kB * TREF)
-
-    #                  1      2   3     4  5     6    7    8    9    10   11   12    13    14    15     16
-    #lines[i] = SA_F64[λ_ul0, E_l, E_u, S, A_ul, γ_a, γ_s, n_a, δ_a, g_u, g_l, B_ul, B_lu, ΔλL0, iso_m, iso_c]
-
-    λ210  = ld.λ210[iλ]
-    E1    = ld.E1[iλ]
-    E2    = ld.E2[iλ]
-    A21   = ld.A21[iλ]
-    S21r  = ld.S21[iλ]
-    γair  = ld.γair[iλ]
-    γself = ld.γself[iλ]
-    nair  = ld.nair[iλ]
-    δair  = ld.δair[iλ]
-    g2    = ld.g2[iλ]
-    g1    = ld.g1[iλ]
-    B12   = ld.B12[iλ]
-    B21   = ld.B12[iλ]
-    iso   = ld.lid[iλ]
-
-    if iso > 11
-        @warne mid, lid, λ210
-    end
-
-    Nspec = c * N
-
-    # pressure shift
-    λ21 = λ210 / (1.0 + δair * λ210 * p)
-
-    # Lorentzian (pressure-broadened) HWHM, γ(p,T) 
-    #γpT = (TREF/T)^nair * (γair * (p - pself) + γself*pself)
-    γp = (TREF/T)^nair * (γair * p * (1.0 - c) + γself * p * c)
-
-    ΔλL = λ21^2 * γp 
-    ΔλG = sqrt(2.0 * c_kB * T / miso[iso]) / c_c * λ21
-
-    N1  = g1 * exp(- E1 * β) / Qiso[iso] * Nspec
-    N2  = g2 * exp(- E2 * β) / Qiso[iso] * Nspec
-
-    # emission [W/m^3]
-    # ϵ_λ = h * c / λ_0 / (4 * π) * N_u * A_ul * f_λ
-    ϵ = c_h * c_c / λ21 *  N2 * A21 * dΩ / (4.0 * π)
-
-    # absorption coefficient [1/m]
-    # κ_λ = h / λ_0 * N_l * B_lu * (1 - N_u/N_l * g_l/g_u) * λ_0**2 / c * f_λ
-    κ = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)
-
-    ΔE21 = E2-E1
-    S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Nspec
-    
-    κ2   = S21 * λ210^2 # [1/m]
-
-    iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ2
-end
-
-@doc raw"""
-    compute_lines_emission_and_absorption(moleculardata, linedata, Nmolecules, T, N, p)
-
-    Compute emission and absorption coefficients of the lines
-
-    T - temperature
-    N - atmosphere density
-    p - pressure
-    NCO2 - CO2 concentration
-
-$γ = \left(\dfrac{T_{ref}}{T}\right)^n_{air} (γ_a(p_{ref], T_{ref}) (p - p_{CO2}) + γ_s p_{CO2}(p_{ref], T_{ref})
-
-Niso = N * NCO2 * iso_c
-
-λ_ul = λ_ul0 / (1.0 + λ_ul0 * δ_a * p)
-
-# γ = (Tref/T)^n_{air} (γ_a(p_{ref], T_{ref}) (p - p_{CO2}) + γ_s p_{CO2}(p_{ref], T_{ref})
-dT = (TREF/T)^n_a
-γ = dT * (γ_a * p * (1.0 - NCO2) + γ_s * p * NCO2)
-
-ΔλL = λ_ul^2 * γ
-ΔλG = sqrt(2.0 * c_kB * T / iso_m) / c_c * λ_ul
-ΔλL_mean[iλ] = ΔλL
-ΔλD_mean[iλ] = ΔλG
-
-$N_l  = \dfrac{g_l}{Q(T, iso)} \exp(- E_l  β)  N_{iso}$
-$N_u  = \dfrac{g_u}{Q(T, iso)} \exp(- E_u  β)  N_{iso}$
-
-$ϵ(λ) = \dfrac{h c}{λ_0} N_u A_{ul} * f(λ) \dfrac{dΩ}{4 π}$
-$κ(λ) = \dfrac{h c}{λ_0} N_l B_{lu}  \left(1 - \dfrac{N_u}{N_l}  \dfrac{g_l}{g_u}\right)  \dfrac{λ_0^2}{c} f(λ)$
-
-No4
-"""
-function compute_lines_emission_and_absorption!(ML::Matrix{Float64}, par, ld::LineData, Qref, Qiso, miso, c, T, N, p)
-    Threads.@threads for iλ in eachindex(ld.λ210)
-        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ = compute_line_emission_and_absorption_iλ(ld, Qref, Qiso, miso, c, T, N, p, iλ)
-        ML[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ]
-    end
-end
 
 """
     sum over all lines using their line shape
@@ -223,8 +123,8 @@ function sum_over_lines(par, ML, T, λb)
             lorentz = LorentzProfile(ΔλL)
 
             δiλ = max(2, floor(Int64, (ΔλL + ΔλG) * par.Δλ_factor / dλ))
-            iλm = max(1, iλ - δiλ)
-            iλp = min(iλ + δiλ + 1, nλb)
+            iλm = max(  1, iλ - δiλ)
+            iλp = min(nλb, iλ + δiλ + 1)
 
             sumft = zeros(Float64, Threads.threadid())
             for iλ in iλm:iλp
@@ -339,7 +239,7 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
             cihic[spec] = md.cnh[ih] * cc[ic] * PPM
 
             nλl = length(linedata[spec].λ210)
-            ML[spec] = Matrix{Float64}(undef, 11, nλl)
+            ML[spec] = Matrix{Float64}(undef, 12, nλl)
             compute_lines_emission_and_absorption!(ML[spec], par, linedata[spec], Qref, Qiso, miso, cihic[spec], T, N, p);
         end
 

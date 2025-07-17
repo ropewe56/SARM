@@ -28,7 +28,7 @@ function write_results_to_hdf5(paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb,
     spectrum_name = @sprintf("spectrum_%03d_%d_%d_%4.1f.hdf5", ic, iθ, ih, atm.h[ih]*1.0e-3)
     hdf5_path = joinpath(paths.spectrum, spectrum_name)
 
-    # ML :     iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ
+    # ML :     iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ1, κ2
 
     d = Dict("λ" => λb, "I" => Iλb, "κ" => κb, "ϵ" => ϵb)
     for (spec, val) in κbs
@@ -39,12 +39,14 @@ function write_results_to_hdf5(paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb,
 
         sl = @sprintf("Sl_%s", spec)
         ll = @sprintf("λl_%s", spec)
-        kl = @sprintf("κl_%s", spec)
         el = @sprintf("ϵl_%s", spec)
+        kl1 = @sprintf("κl1_%s", spec)
+        kl2 = @sprintf("κl2_%s", spec)
         d[sl] = ML[spec][2,:] 
         d[ll] = ML[spec][3,:] 
-        d[kl] = ML[spec][10,:] 
-        d[el] = ML[spec][11,:] 
+        d[el] = ML[spec][10,:] 
+        d[kl1] = ML[spec][11,:] 
+        d[kl2] = ML[spec][12,:] 
     end
 
     groups = Dict( "sarm" => d)

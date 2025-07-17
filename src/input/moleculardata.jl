@@ -4,13 +4,30 @@ using Printf
 using Interpolations
 using DataFrames
 using CSV
+using JSON3
 
+const DATADIR = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data"
 
-const datadir = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data"
-const H2O_Q   = joinpath(datadir, "H2O", "H2O_Q", "H2O_Isotopes.txt")
-const CO2_Q   = joinpath(datadir, "CO2", "CO2_Q", "CO2_Isotopes.txt")
-const H2Oout  = joinpath(datadir, "H2O", "H2O_rwfmt.out")
-const CO2out  = joinpath(datadir, "CO2", "CO2_rwfmt.out")
+function data_files()
+    d = Dict(
+        :H2O_Q           => joinpath(DATADIR, "H2O", "H2O_Q", "H2O_Isotopes.txt"),
+        :CO2_Q           => joinpath(DATADIR, "CO2", "CO2_Q", "CO2_Isotopes.txt"),
+        :H2Oout          => joinpath(DATADIR, "H2O", "H2O_rwfmt.out"),
+        :CO2out          => joinpath(DATADIR, "CO2", "CO2_rwfmt.out"),
+        :H2Ohdf5         => joinpath(DATADIR, "H2O", "H2O_rwfmt.hdf5"),
+        :CO2hdf5         => joinpath(DATADIR, "CO2", "CO2_rwfmt.hdf5"),
+        :H2Ohdf5_compact => joinpath(DATADIR, "H2O", "H2O_rwfmt_compact.hdf5"),
+        :CO2hdf5_compact => joinpath(DATADIR, "CO2", "CO2_rwfmt_compact.hdf5"),
+        )
+    open(joinpath(DATADIR, "data_files.json"), "w") do io
+        JSON3.pretty(io, JSON3.write(d))#, ac=JSON3.AlignmentContext())
+    end
+end
+function get_data_files()
+    open(joinpath(DATADIR, "data_files.json"), "r") do io
+        JSON3.read(io)
+    end
+end
 
 
 struct MolecularData
