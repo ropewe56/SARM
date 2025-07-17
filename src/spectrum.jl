@@ -86,73 +86,55 @@ end
     N - density
     ML = ML[:CO2]
 """
-function sum_over_lines(par, ML, T, λb)
+function sum_over_lines(par, MLspec, T, λb)
     λ1   = λb[1]
     λend = λb[end]
     Δλ   = λend - λ1
     dλ   = λb[2] - λ1
     nλb  = length(λb)
+    par.Δλ_factor = 10
 
-    κbt = alloc2(par.prealloc, :κbt, nλb, Threads.nthreads(), true)
-    ϵbt = alloc2(par.prealloc, :ϵbt, nλb, Threads.nthreads(), true)
-    fbt = alloc2(par.prealloc, :fbt, nλb, Threads.nthreads(), true)
+    nbthreads = Threads.nthreads()
+    κbt = alloc2(par.prealloc, :κbt, nλb, nbthreads, true)
+    ϵbt = alloc2(par.prealloc, :ϵbt, nλb, nbthreads, true)
+    κb = alloc1(par.prealloc, :κb, nλb, true)
+    ϵb = alloc1(par.prealloc, :ϵb, nλb, true)
 
-    # λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, mass, Float64(mid)
-    n1, n2 = size(ML)
+    λ21  = MLspec[3, :]
+    index = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
+    ML = MLspec[:,index]
+    n1, nλl = size(ML)
 
-    # [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, m, ϵ, κ]
+    Threads.@threads for il in 1:nλl
+        tid = Threads.threadid()
 
-    il = 1
-    Threads.@threads for il in 1:n2
-        iso  = ML[ 1, il]
-        S21  = ML[ 2, il]
         λ21  = ML[ 3, il]
-        γ    = ML[ 4, il]
         ΔλL  = ML[ 5, il]
         ΔλG  = ML[ 6, il]
-        N1   = ML[ 7, il]
-        N2   = ML[ 8, il]
         mass = ML[ 9, il]
         ϵ    = ML[10, il]
         κ    = ML[11, il]
 
-        if λ21 >= λ1 && λ21 <= λend
-            iλ = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
+        iλb = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
 
-            gauss   = GaussProfile(mass, T)
-            lorentz = LorentzProfile(ΔλL)
+        δiλ = max(2, floor(Int64, (ΔλL + ΔλG) * par.Δλ_factor / dλ))
+        iλm = max(  1, iλb - δiλ)
+        iλp = min(nλb, iλb + δiλ + 1)
 
-            δiλ = max(2, floor(Int64, (ΔλL + ΔλG) * par.Δλ_factor / dλ))
-            iλm = max(  1, iλ - δiλ)
-            iλp = min(nλb, iλ + δiλ + 1)
+        #fG = fgauss(λb[iλm:iλp], λb[iλb], ΔλG)
+        #fL = florentz(λb[iλm:iλp], λb[iλb], ΔλL)
+        
+        #fb = florentz(λb[iλm:iλp], λb[iλb], ΔλL+ΔλG)
+        fb = voigt(ΔλG, ΔλL, fg, fl, λ, λ0)
 
-            sumft = zeros(Float64, Threads.threadid())
-            for iλ in iλm:iλp
-                fbt[iλ, Threads.threadid()] = voigt(gauss, lorentz, λb[iλ], λ21)
-                sumft[Threads.threadid()] += fbt[iλ, Threads.threadid()]
-            end
-            int_fb = sum(sumft) * dλ
-            cf = 1.0
-            if int_fb > 0.8 && int_fb <= 1.0
-                cf = 1.0/int_fb
-            end
-
-            for iλ in iλm:iλp
-                κbt[iλ, Threads.threadid()] = κbt[iλ, Threads.threadid()] + κ * fbt[iλ, Threads.threadid()] * cf
-                ϵbt[iλ, Threads.threadid()] = ϵbt[iλ, Threads.threadid()] + ϵ * fbt[iλ, Threads.threadid()] * cf
-            end
-        end
+        κbt[iλm:iλp, tid] += @. κ * fb
+        ϵbt[iλm:iλp, tid] += @. ϵ * fb
     end
 
-    κb = alloc1(par.prealloc, :κb, nλb, true)
-    ϵb = alloc1(par.prealloc, :ϵb, nλb, true)
-    for tid in 1:Threads.nthreads()
-        for iλ in 1:nλb
-            κb[iλ] += κbt[iλ, tid]
-            ϵb[iλ] += ϵbt[iλ, tid]
-        end
-    end
+    κb[:] = sum(κbt,dims=2)
+    ϵb[:] = sum(ϵbt,dims=2)
 
+    plt.plot(κb[:])
     κb, ϵb
 end
 
@@ -247,6 +229,9 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
         ϵbs      = Dict{Symbol, Vector{Float64}}()
         ΔλL_mean = Dict{Symbol, Float64}()
         ΔλD_mean = Dict{Symbol, Float64}()
+        spec = :CO2
+        cc = par.c_ppm[spec]
+        MLspec = ML[spec]
         for (spec, cc) in par.c_ppm
             κbs[spec], ϵbs[spec] = sum_over_lines(par, ML[spec], T, λb)
             ΔλLs = ML[spec][3,:]

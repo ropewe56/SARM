@@ -6,9 +6,10 @@ using DataFrames
 using CSV
 using JSON3
 
-const DATADIR = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data"
+data_root() =  "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data"
 
 function data_files()
+    DATADIR = data_root()
     d = Dict(
         :H2O_Q           => joinpath(DATADIR, "H2O", "H2O_Q", "H2O_Isotopes.txt"),
         :CO2_Q           => joinpath(DATADIR, "CO2", "CO2_Q", "CO2_Isotopes.txt"),
@@ -24,7 +25,7 @@ function data_files()
     end
 end
 function get_data_files()
-    open(joinpath(DATADIR, "data_files.json"), "r") do io
+    open(joinpath(data_root(), "data_files.json"), "r") do io
         JSON3.read(io)
     end
 end

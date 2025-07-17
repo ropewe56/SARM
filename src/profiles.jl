@@ -21,12 +21,15 @@ end
 
 end
 
-function fv(g::GaussProfile, λ::Vector{Float64}, λ0)
-    @fastmath Δλ = gp.Δλ0 * λ0
-    @fastmath c  = gp.ln2 / Δλ^2
-    @fastmath @. gp.dπ * sqrt(c) * exp(- c *(λ - λ0)^2)
+@inline function fgauss(λ::Vector{Float64}, λ0, ΔλG)
+    @fastmath f = @. exp(- log(2.0) * 4.0 * ((λ - λ0)/ΔλG)^2)
+    @fastmath f ./ (sum(f) * (λ[2]-λ[1]))
 end
 
+@inline function florentz(λ::Vector{Float64}, λ0, ΔλL)
+    @fastmath f = @. 1.0 / (1.0 + ((λ - λ0)/(0.5*ΔλL))^2)
+    @fastmath f ./ (sum(f) * (λ[2]-λ[1]))
+end
 
 struct LorentzProfile
     ΔλL :: Float64
@@ -37,10 +40,6 @@ end
     @fastmath 1.0 / (π * l.ΔλL * (dλ^2 + 1.0))
 end
 
-@inline function fv(l::LorentzProfile, λ::Vector{Float64}, λ0)
-    @fastmath dλ = @. (λ - λ0)/l.ΔλL
-    @fastmath @. 1.0 / (π * l.ΔλL * (dλ^2 + 1.0))
-end
 
 mutable struct VoigtProfile
     Gauss   :: GaussProfile
@@ -50,13 +49,13 @@ end
 """
     Simple Voigt profile
 """
-@inline function voigt(g::GaussProfile, l::LorentzProfile, λ, λ0)
-    v = l.ΔλL / (g.Δλ0*λ0)
+@inline function voigt(ΔλG, ΔλL, fg, fl, λ, λ0)
+    v = ΔλL / ΔλG
     v = max(0.0, 1.36606 * v - 0.47719 *v^2 + 0.11116 * v^3)
     if v > 1.0
-        return f(l, λ, λ0)
+        return fl
     end
-    return v * f(l, λ, λ0) + (1.0 - v) * f(g, λ, λ0)
+    @. v * fl + (1.0 - v) * fg
 end
 
 @inline function f(vp::VoigtProfile, λ, λ0)
