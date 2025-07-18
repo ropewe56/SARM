@@ -44,7 +44,7 @@ function save_planck_as_hdf5(hdf5_path::String, T::Union{Float64,Vector{Float64}
     save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    
 end
 
-function create_planck_spectrum(par, λb)
+function create_planck_spectrum(par)
     λ1 = 1.0e-6
     λ2 = 30.0*λ1
     nλ = 1000
@@ -53,18 +53,18 @@ function create_planck_spectrum(par, λb)
     IP = planck_λ(par.surface_T, λP)
     save_planck_as_hdf5(par.paths.planck_single, par.surface_T, λP, IP)
 
-    IPb = compute_planck(par.planck_Ts, λb)
-    save_planck_as_hdf5(par.paths.planck_multi, par.planck_Ts, λb, IPb)
+    IPb = compute_planck(par.planck_Ts, par.λb)
+    save_planck_as_hdf5(par.paths.planck_multi, par.planck_Ts, par.λb, IPb)
 end
 
-function initial_intensity(par, λb)
+function initial_intensity(par)
     Iλb = if par.initial_intensity == :planck
-        Iλb = planck_λ(par.surface_T, λb)
+        Iλb = planck_λ(par.surface_T, par.λb)
         Iλb .* (1.0 - par.albedo)
     else
         zeros(Float64, length(λλ))
     end
-    save_planck_as_hdf5(joinpath(par.paths.initial_intensity), par.planck_Ts, λb, Iλb)
+    save_planck_as_hdf5(joinpath(par.paths.initial_intensity), par.planck_Ts, par.λb, Iλb)
     Iλb
 end
 

@@ -226,16 +226,17 @@ function compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso
     N1  = g1 * exp(- E1 * β) / Qiso[iso] * Nspec
     N2  = g2 * exp(- E2 * β) / Qiso[iso] * Nspec
 
-    # emission [W/m^3]
-    # ϵ * f(λ) * dλ * Δh                                             # [J / (m^2 * sr)]
-    ϵ = hc/λ21 * A21 * dΩ/(4.0*π) *  N2                              # [J / (m^3 * sr)]
+    # emission [W/m^2]
+    ϵ = c_h * λ21 * A21 * dΩ/(4.0*π) *  N2                           # [J / (m^2 * sr)]
+    # ϵ * f(λ) * dz                                                  # [J / (m^2 * sr) / m * m] 
 
     # absorption coefficient [1]
-    # κ * f(λ) * dλ * Δh                                             # [m]
     κ1 = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)                     # Js * m * s/m / m^3 * m^3/(J*s^2) = 1
+    # I * κ * f(λ) * dz                                              # [J/m^2 * 1/m * m]
 
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Nspec    # [1/m^2]  
     κ2   = S21 * λ210^2                                              # [1]
+
 
     iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ1, κ2
 end
@@ -251,10 +252,10 @@ end
     NCO2 - CO2 concentration
 No4
 """
-function compute_lines_emission_and_absorption!(ML::Matrix{Float64}, par, ld::LineData, Qref, Qiso, miso, c, T, N, p)
-    Threads.@threads for iλ in eachindex(ld.λ210)
-        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(ld, Qref, Qiso, miso, c, T, N, p, iλ)
-        ML[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
+function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, linedata::LineData, Qref, Qiso, miso, c, T, N, p)
+    Threads.@threads for iλ in eachindex(linedata.λ210)
+        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(linedata, Qref, Qiso, miso, c, T, N, p, iλ)
+        linedata_pTNc_spec[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
     end
 end
 
@@ -265,46 +266,45 @@ end
     N - density
     ML = ML[:CO2]
 """
-function sum_over_lines(par, MLspec, T, λb)
+function sum_over_lines(par, linedata_pTNc_spec)
+    λb = par.λb
+    
     λ1   = λb[1]
     λend = λb[end]
     Δλ   = λend - λ1
     dλ   = λb[2] - λ1
     nλb  = length(λb)
 
-    nbthreads = 1#Threads.nthreads()
+    nbthreads = Threads.nthreads()
     κbt = alloc2(par.prealloc, :κbt, nλb, nbthreads, true)
     ϵbt = alloc2(par.prealloc, :ϵbt, nλb, nbthreads, true)
     κb = alloc1(par.prealloc, :κb, nλb, true)
     ϵb = alloc1(par.prealloc, :ϵb, nλb, true)
 
-    λ21  = MLspec[3, :]
+    λ21  = linedata_pTNc_spec[3, :]
     index = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
-    ML = MLspec[:,index]
+    ML = linedata_pTNc_spec[:,index]
     n1, nλl = size(ML)
 
     il = 1
-    #Threads.@threads 
-    for il in 1:nλl
-        tid = 1#Threads.threadid()
+    Threads.@threads for il in 1:nλl
+        tid = Threads.threadid()
 
         λ21  = ML[ 3, il]
-        ΔλLh = ML[ 5, il]
-        ΔλGh = ML[ 6, il]
-        mass = ML[ 9, il]
+        ΔλLh = ML[ 5, il]*0.5
+        ΔλGh = ML[ 6, il]*0.5
         ϵ    = ML[10, il]
         κ    = ML[11, il]
 
         iλb = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
 
-        δiλ = max(2, floor(Int64, (ΔλLh + ΔλGh) * par.f_Δλ_increase / dλ))
+        δiλ = max(2, floor(Int64, (ΔλLh + ΔλGh) * par.f_Δλ_factor / dλ))
         iλm = max(  1, iλb - δiλ)
         iλp = min(nλb, iλb + δiλ + 1)
 
-        #fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, par.f_norm_method)
-        #fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, par.f_norm_method)
-        
-        fb = voigt(λb[iλm:iλp], λb[iλb], ΔλLh, ΔλGh, par.f_norm_method)
+        # fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, par.fG_adapt)        
+        # fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, par.fL_adapt)
+        fb = voigt(λb[iλm:iλp], λb[iλb], ΔλLh, ΔλGh, par.fL_adapt, par.fG_adapt)
 
         κbt[iλm:iλp, tid] += @. κ * fb
         ϵbt[iλm:iλp, tid] += @. ϵ * fb
@@ -313,6 +313,37 @@ function sum_over_lines(par, MLspec, T, λb)
     κb[:] = sum(κbt,dims=2)
     ϵb[:] = sum(ϵbt,dims=2)
 
-    plt.plot(κb[:])
+    #plt.plot(κb[:])
     κb, ϵb
 end
+
+function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κb::Vector{Float64}, ϵb::Vector{Float64},  Δs::Float64, par)
+    exp_κ = exp.(-κb .* Δs)
+    if par.with_emission
+        eps    = @. ifelse(abs(κb) * Δs < par.κΔs_limit, ϵb*Δs, ϵb/κb*(1.0-exp_κ)) # ϵb/κb*(1.0-exp_κ) ≈ ϵb*Δs
+        Iλb[:] = @. Iλb * exp_κ + eps
+    else
+        Iλb[:] = @. Iλb * exp_κ
+    end
+end
+
+function add_background()
+#        #@time begin
+#        # add background ?
+#        if spec.par.background > 1.0e-10
+#            iw = floor(Int64, ((ΔλL_mean + ΔλD_mean) / dλ * spec.par.Δλ_factor))
+#            # compute movning average
+#            ma_κ = moving_average5(spec.κ_c, iw*2)
+#            ma_ϵ = moving_average5(spec.ϵ_c, iw*2)
+#            # add background
+#            for iλ in 1:nb_λ
+#                spec.κ_c[iλ] += ma_κ[iλ] * spec.par.background
+#                spec.ϵ_c[iλ] += ma_ϵ[iλ] * spec.par.background
+#            end
+#            # ning average once
+#            if iN == 1 && iθ == 1
+#                save_intensity_as_hdf5(joinpath(spec.par.out_dir, "moving_average_kappa"), spec.λ, ma_κ)
+#            end
+#        end
+end
+

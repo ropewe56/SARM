@@ -58,67 +58,14 @@ function integrate_results(par::RunParameter, h, θ, T, N, ΔλL_mean, ΔλD_mea
     int_I, int_ϵ, int_κ, int_Iκ
 end
 
-function add_background()
-#        #@time begin
-#        # add background ?
-#        if spec.par.background > 1.0e-10
-#            iw = floor(Int64, ((ΔλL_mean + ΔλD_mean) / dλ * spec.par.Δλ_factor))
-#            # compute movning average
-#            ma_κ = moving_average5(spec.κ_c, iw*2)
-#            ma_ϵ = moving_average5(spec.ϵ_c, iw*2)
-#            # add background
-#            for iλ in 1:nb_λ
-#                spec.κ_c[iλ] += ma_κ[iλ] * spec.par.background
-#                spec.ϵ_c[iλ] += ma_ϵ[iλ] * spec.par.background
-#            end
-#            # ning average once
-#            if iN == 1 && iθ == 1
-#                save_intensity_as_hdf5(joinpath(spec.par.out_dir, "moving_average_kappa"), spec.λ, ma_κ)
-#            end
-#        end
-end
-
-function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κbs::Dict{Symbol,Vector{Float64}}, ϵbs::Dict{Symbol,Vector{Float64}}, 
-                                     Δs::Float64, with_emission::Bool, κΔs_limit::Float64)
-
-    nλb = length(Iλb)
-    κb = zeros(Float64, nλb)
-    ϵb = zeros(Float64, nλb)
-    for (k, val) in κbs
-        @. κb += val
-    end
-    for (k, val) in ϵbs
-        @. ϵb += val
-    end
-
-    Threads.@threads for iλ in eachindex(Iλb)
-        exp_κ = exp(-κb[iλ] * Δs)
-        eps = 0.0
-        if with_emission
-            eps = if abs(κb[iλ]) * Δs < κΔs_limit
-                ϵb[iλ] * Δs
-            else
-                ϵb[iλ] / κb[iλ] * (1.0 - exp_κ)
-            end
-            Iλb[iλ] = Iλb[iλ] * exp_κ + eps
-        else
-            Iλb[iλ] = Iλb[iλ] * exp_κ
-        end
-
-        if isnan(Iλb[iλ])
-            @infoe @sprintf("%d  %e  %e  %e  %e", iλ, Iλb[iλ], κb[iλ], ϵb[iλ], exp_κ)
-        end
-    end
-    κb, ϵb
-end
 
 """
-    integrate_along_path(par, atm, moleculardata, linedata, ch0, ic, iθ, θ, λb)
+    integrate_along_path(par, atm, moleculardata, linedata, ch0, ic, iθ, θ)
 No2
 """
-function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, θ, λb)
-    nλb = length(λb)
-    Iλb = initial_intensity(par, λb)
+function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, θ)
+
+    Iλb = initial_intensity(par)
     int_I0 = sum(Iλb) * par.Δλb
 
     Tmin = par.surface_T
@@ -152,7 +99,7 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
         # SVector: λ21, γ, ΔλL, ΔλG, N1, N2, ϵ, κ, mass
 
         cihic = Dict{Symbol, Float64}()
-        ML    = Dict{Symbol,Matrix{Float64}}()
+        linedata_pTNc = Dict{Symbol,Matrix{Float64}}()
         for (spec, cc) in par.c_ppm
             md   = moleculardata[spec]
             miso = md.iso_m       # Vector
@@ -161,8 +108,8 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
             cihic[spec] = md.cnh[ih] * cc[ic] * PPM
 
             nλl = length(linedata[spec].λ210)
-            ML[spec] = Matrix{Float64}(undef, 12, nλl)
-            compute_lines_emission_and_absorption!(ML[spec], par, linedata[spec], Qref, Qiso, miso, cihic[spec], T, N, p);
+            linedata_pTNc[spec] = Matrix{Float64}(undef, 12, nλl)
+            compute_lines_emission_and_absorption!(linedata_pTNc[spec], par, linedata[spec], Qref, Qiso, miso, cihic[spec], T, N, p);
         end
 
         κbs      = Dict{Symbol, Vector{Float64}}()
@@ -171,11 +118,11 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
         ΔλD_mean = Dict{Symbol, Float64}()
         spec = :CO2
         cc = par.c_ppm[spec]
-        MLspec = ML[spec]
+        linedata_pTNc_spec = linedata_pTNc[spec]
         for (spec, cc) in par.c_ppm
-            κbs[spec], ϵbs[spec] = sum_over_lines(par, ML[spec], T, λb)
-            ΔλLs = ML[spec][3,:]
-            ΔλDs = ML[spec][4,:]
+            κbs[spec], ϵbs[spec] = sum_over_lines(par, linedata_pTNc[spec])
+            ΔλLs = linedata_pTNc[spec][3,:]
+            ΔλDs = linedata_pTNc[spec][4,:]
             ΔλL_mean[spec] = Statistics.mean(ΔλLs)
             ΔλD_mean[spec] = Statistics.mean(ΔλDs)
         end
@@ -188,20 +135,28 @@ function integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, �
         #t5 = time_ns()
 
         # step size Δs = z/cos(θ)
-        Δs = 1.0
-        if ih < nh
+        Δs = if ih < nh
             Δs = (atm.h[ih+1] - atm.h[ih]) / cos(θ)
         else
-            par.κΔs_limit
             Δs = (atm.h[ih] - atm.h[ih-1]) / cos(θ)
         end
 
-        # No7
-        κb, ϵb = integrate_intensity_over_Δs(Iλb, κbs, ϵbs, Δs, par.with_emission, par.κΔs_limit) # 3
+        # add species κ, ϵ  
+        nλb = length(Iλb)
+        κb  = zeros(Float64, nλb)
+        ϵb  = zeros(Float64, nλb)
+        for (k, val) in κbs
+            @. κb += val
+        end
+        for (k, val) in ϵbs
+            @. ϵb += val
+        end
+
+        integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par) # 3
         push!(tt, time_ns())
 
         hdf5_path = if atm.h_iout[ih] == 1
-            write_results_to_hdf5(par.paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb, κbs, ϵbs)
+            write_results_to_hdf5(par.paths, atm, ic, iθ, ih, linedata_pTNc, par.λb, Iλb, κb, ϵb, κbs, ϵbs)
         else
             missing
         end
@@ -234,27 +189,15 @@ end
 No1
 """
 function integrate(par::RunParameter, rdb, atm::Atmosphere, molecular_data::Dict{Symbol,MolecularData},  line_data::Dict{Symbol,LineData})
-    nλb = floor(Int64, (par.λmax - par.λmin) / par.Δλb)
-    λb  = collect(range(par.λmin, par.λmax, nλb))
-    create_planck_spectrum(par, λb)
-
-    cch0 = [par.c_ppm[k][1] for k in keys(par.c_ppm)]
-    nbc = maximum([length(par.c_ppm[k]) for k in keys(par.c_ppm)])
-
     # loop over CO2 concentrations
     ic     = 1
     iθ, θ  = 1, 0.0
-    for ic in 1:nbc
+    for ic in 1:par.nbc
         # loop over angles
         for (iθ, θ) in enumerate(par.θ)
-            # >> 
-            out = @sprintf("# ic = %d, iθ = %d, ch0 = %s, θ = %12.5e", ic, iθ, cch0, θ)
-            write(par.paths.logfile, string(out, "\n"))
-            @infoe out
-            # <<
 
             # integrate along path
-            @time cputimes = integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, θ, λb);            
+            @time cputimes = integrate_along_path(par, rdb, atm, moleculardata, linedata, ic, iθ, θ);            
 
             m1, m2 = size(cputimes)
             for im in 1:m2

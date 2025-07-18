@@ -69,6 +69,11 @@ function get_results(root, ic, iθ, hi)
 end
 
 function plot_result(hdf5_path)
+    path_Ii  = joinpath(results_root, root, "intensity", "initial_intensity.hdf5")
+    pli = load_groups_as_hdf5(path_Ii)
+    p = pli["TλI"]
+    λi, Ii = p["λ"], p["I"]
+
     groups = load_groups_as_hdf5(hdf5_path)
     data = groups["sarm"]
     keys(data)
@@ -87,7 +92,9 @@ function plot_result(hdf5_path)
     κl2 = data["κl2_CO2"]
 
     plt.figure()
+
     plt.plot(λ,I)
+    plt.plot(λi,Ii)
     plt.xlabel("λ")
     plt.ylabel("I")
 
@@ -123,8 +130,10 @@ function plot_result(hdf5_path)
 end
 
 root = readdir(results_root)[end]
+
 plot_planck(root, 10.0e-6, 20.0e-6)
 
-species, hdf5_paths, h, ih = get_results(root, 1, 1, 0.0);
+species, hdf5_paths, h, ih = get_results(root, 1, 1, 70000.0);
 hdf5_path = hdf5_paths[ih]
+
 plot_result(hdf5_path)
