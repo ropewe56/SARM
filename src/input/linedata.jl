@@ -257,3 +257,62 @@ function compute_lines_emission_and_absorption!(ML::Matrix{Float64}, par, ld::Li
         ML[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
     end
 end
+
+"""
+    sum over all lines using their line shape
+
+    T - temperature
+    N - density
+    ML = ML[:CO2]
+"""
+function sum_over_lines(par, MLspec, T, λb)
+    λ1   = λb[1]
+    λend = λb[end]
+    Δλ   = λend - λ1
+    dλ   = λb[2] - λ1
+    nλb  = length(λb)
+
+    nbthreads = 1#Threads.nthreads()
+    κbt = alloc2(par.prealloc, :κbt, nλb, nbthreads, true)
+    ϵbt = alloc2(par.prealloc, :ϵbt, nλb, nbthreads, true)
+    κb = alloc1(par.prealloc, :κb, nλb, true)
+    ϵb = alloc1(par.prealloc, :ϵb, nλb, true)
+
+    λ21  = MLspec[3, :]
+    index = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
+    ML = MLspec[:,index]
+    n1, nλl = size(ML)
+
+    il = 1
+    #Threads.@threads 
+    for il in 1:nλl
+        tid = 1#Threads.threadid()
+
+        λ21  = ML[ 3, il]
+        ΔλLh = ML[ 5, il]
+        ΔλGh = ML[ 6, il]
+        mass = ML[ 9, il]
+        ϵ    = ML[10, il]
+        κ    = ML[11, il]
+
+        iλb = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
+
+        δiλ = max(2, floor(Int64, (ΔλLh + ΔλGh) * par.f_Δλ_increase / dλ))
+        iλm = max(  1, iλb - δiλ)
+        iλp = min(nλb, iλb + δiλ + 1)
+
+        #fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, par.f_norm_method)
+        #fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, par.f_norm_method)
+        
+        fb = voigt(λb[iλm:iλp], λb[iλb], ΔλLh, ΔλGh, par.f_norm_method)
+
+        κbt[iλm:iλp, tid] += @. κ * fb
+        ϵbt[iλm:iλp, tid] += @. ϵ * fb
+    end
+
+    κb[:] = sum(κbt,dims=2)
+    ϵb[:] = sum(ϵbt,dims=2)
+
+    plt.plot(κb[:])
+    κb, ϵb
+end

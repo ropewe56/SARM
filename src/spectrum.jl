@@ -78,66 +78,6 @@ function add_background()
 #        end
 end
 
-
-"""
-    sum over all lines using their line shape
-
-    T - temperature
-    N - density
-    ML = ML[:CO2]
-"""
-function sum_over_lines(par, MLspec, T, λb)
-    λ1   = λb[1]
-    λend = λb[end]
-    Δλ   = λend - λ1
-    dλ   = λb[2] - λ1
-    nλb  = length(λb)
-    par.Δλ_factor = 10
-
-    nbthreads = Threads.nthreads()
-    κbt = alloc2(par.prealloc, :κbt, nλb, nbthreads, true)
-    ϵbt = alloc2(par.prealloc, :ϵbt, nλb, nbthreads, true)
-    κb = alloc1(par.prealloc, :κb, nλb, true)
-    ϵb = alloc1(par.prealloc, :ϵb, nλb, true)
-
-    λ21  = MLspec[3, :]
-    index = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
-    ML = MLspec[:,index]
-    n1, nλl = size(ML)
-
-    Threads.@threads for il in 1:nλl
-        tid = Threads.threadid()
-
-        λ21  = ML[ 3, il]
-        ΔλL  = ML[ 5, il]
-        ΔλG  = ML[ 6, il]
-        mass = ML[ 9, il]
-        ϵ    = ML[10, il]
-        κ    = ML[11, il]
-
-        iλb = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
-
-        δiλ = max(2, floor(Int64, (ΔλL + ΔλG) * par.Δλ_factor / dλ))
-        iλm = max(  1, iλb - δiλ)
-        iλp = min(nλb, iλb + δiλ + 1)
-
-        #fG = fgauss(λb[iλm:iλp], λb[iλb], ΔλG)
-        #fL = florentz(λb[iλm:iλp], λb[iλb], ΔλL)
-        
-        #fb = florentz(λb[iλm:iλp], λb[iλb], ΔλL+ΔλG)
-        fb = voigt(ΔλG, ΔλL, fg, fl, λ, λ0)
-
-        κbt[iλm:iλp, tid] += @. κ * fb
-        ϵbt[iλm:iλp, tid] += @. ϵ * fb
-    end
-
-    κb[:] = sum(κbt,dims=2)
-    ϵb[:] = sum(ϵbt,dims=2)
-
-    plt.plot(κb[:])
-    κb, ϵb
-end
-
 function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κbs::Dict{Symbol,Vector{Float64}}, ϵbs::Dict{Symbol,Vector{Float64}}, 
                                      Δs::Float64, with_emission::Bool, κΔs_limit::Float64)
 
