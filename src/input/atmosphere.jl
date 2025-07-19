@@ -23,9 +23,9 @@ end
     e
 """
 function make_h_e(par)
-    nh = par.nh
-    e  = par.e
-    dhmin, dhmax, hmin, hmax = par.dhmin, par.dhmax, par.hmin, par.hmax
+    nh = par[:nh]
+    e  = par[:e]
+    dhmin, dhmax, hmin, hmax = par[:dhmin], par[:dhmax], par[:hmin], par[:hmax]
 
     dh = collect(range(dhmin, dhmax, nh))
     dh = dh.^e
@@ -42,9 +42,9 @@ function make_h_e(par)
 end
 
 function make_h_exp(par)
-    nh = par.nh
-    e  = par.e
-    dhmin, dhmax, hmin, hmax = par.dhmin, par.dhmax, par.hmin, par.hmax
+    nh = par[:nh]
+    e  = par[:e]
+    dhmin, dhmax, hmin, hmax = par[:dhmin], par[:dhmax], par[:hmin], par[:hmax]
 
     dh = collect(range(dhmin, dhmax, nh))
     dh = dh.^e
@@ -58,9 +58,9 @@ function make_h_exp(par)
         h[i] = ho
     end
 
-    h  = collect(range(hmin, hmax, par.nh))
+    h  = collect(range(hmin, hmax, par[:nh]))
     h = @. exp(h/maximum(h)*e) - 1.0
-    h = h/maximum(h) * par.hmax
+    h = h/maximum(h) * par[:hmax]
     h
 end
 
@@ -78,7 +78,7 @@ end
 
 """
 function make_h_log10(par)
-    log10_h = collect(range(log10(max(1.0e-1, par.xmin)), log10(par.hmax), par.nh))
+    log10_h = collect(range(log10(max(1.0e-1, par[:xmin])), log10(par[:hmax]), par[:nh]))
     h = @. 10^log10_h
     h
 end
@@ -117,16 +117,16 @@ function Atmosphere(par)
     T12 = ip_hT.(h1)
     N12 = @. p1 / (c_kB * T12)
 
-    h = if par.e == :e
+    h = if par[:e] == :e
         make_h_e(par)
-    elseif par.hmethod == :exp
+    elseif par[:hmethod] == :exp
         make_h_exp(par)
-    elseif par.hmethod == :log10
+    elseif par[:hmethod] == :log10
         make_h_log10(par)
-    elseif par.hmethod == :equalnumber
-        np = par.nh*100
+    elseif par[:hmethod] == :equalnumber
+        np = par[:nh]*100
 
-        h = collect(range(par.hmin, par.hmax, np))
+        h = collect(range(par[:hmin], par[:hmax], np))
         p = ip_hp.(h)
         T = ip_hT.(h)
         N = @. p / (c_kB * T)
@@ -144,7 +144,7 @@ function Atmosphere(par)
         Ni, hi, ip = lininterp(reverse(N3), reverse(h3), np) # knot vectors must be uinique and increasing
         # equidistant number of particles within a bin
         x1, x2 = 0.05, 3.0
-        ff = collect(range(x1, 1.0, par.nh)).^x2
+        ff = collect(range(x1, 1.0, par[:nh])).^x2
         fff = @. (ff - ff[1]) / (ff[end] - ff[1])
         Nii = @. (1.0 - fff) * Ni[1] + fff * Ni[end]
         hii = reverse(ip.(Nii))

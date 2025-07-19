@@ -10,23 +10,28 @@ data_root() =  "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data"
 
 function data_files()
     DATADIR = data_root()
-    d = Dict(
-        :H2O_Q           => joinpath(DATADIR, "H2O", "H2O_Q", "H2O_Isotopes.txt"),
-        :CO2_Q           => joinpath(DATADIR, "CO2", "CO2_Q", "CO2_Isotopes.txt"),
-        :H2Oout          => joinpath(DATADIR, "H2O", "H2O_rwfmt.out"),
-        :CO2out          => joinpath(DATADIR, "CO2", "CO2_rwfmt.out"),
-        :H2Ohdf5         => joinpath(DATADIR, "H2O", "H2O_rwfmt.hdf5"),
-        :CO2hdf5         => joinpath(DATADIR, "CO2", "CO2_rwfmt.hdf5"),
-        :H2Ohdf5_compact => joinpath(DATADIR, "H2O", "H2O_rwfmt_compact.hdf5"),
-        :CO2hdf5_compact => joinpath(DATADIR, "CO2", "CO2_rwfmt_compact.hdf5"),
-        )
+    d = Dict(:H2O => Dict(
+                        :Q            => joinpath(DATADIR, "H2O", "H2O_Q", "H2O_Isotopes.txt"),
+                        :out          => joinpath(DATADIR, "H2O", "H2O_rwfmt.out"),
+                        :hdf5         => joinpath(DATADIR, "H2O", "H2O_rwfmt.hdf5"),
+                        :hdf5_compact => joinpath(DATADIR, "H2O", "H2O_rwfmt_compact.hdf5")
+                ),
+             :CO2 => Dict(
+                        :Q            => joinpath(DATADIR, "CO2", "CO2_Q", "CO2_Isotopes.txt"),
+                        :out          => joinpath(DATADIR, "CO2", "CO2_rwfmt.out"),
+                        :hdf5         => joinpath(DATADIR, "CO2", "CO2_rwfmt.hdf5"),
+                        :hdf5_compact => joinpath(DATADIR, "CO2", "CO2_rwfmt_compact.hdf5")
+                ),
+    )
     open(joinpath(DATADIR, "data_files.json"), "w") do io
         JSON3.pretty(io, JSON3.write(d))#, ac=JSON3.AlignmentContext())
     end
+    d
 end
+
 function get_data_files()
     open(joinpath(data_root(), "data_files.json"), "r") do io
-        JSON3.read(io)
+        Dict(JSON3.read(io))
     end
 end
 
@@ -141,4 +146,13 @@ function test()
 
     H2O_line_data = get_line_data(H2Oout, λmin, λmax);
     CO2_line_data = get_line_data(CO2out, λmin, λmax);
+end
+
+function get_molecular_data(par)
+    datfiles = get_data_files()
+    md = Dict{Symbol,MolecularData}()
+    for spec in par[:species]
+        md[spec] = MolecularData(spec, atm, datfiles[spec][:Q], par[:TQmin], par[:TQmax])
+    end
+    md
 end

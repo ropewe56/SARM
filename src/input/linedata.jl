@@ -133,7 +133,7 @@ end
     using only values used in the computations
 
     
-    species, hitran_out, λmin, λmax, iso_max = :CO2, CO2out, par.λmin, par.λmax, length(mdCO2.iso_a)
+    species, hitran_out, λmin, λmax, iso_max = :CO2, CO2out, par[:λmin], par[:λmax], length(mdCO2.iso_a)
 """
 function LineData(hdf5_path)
     iso_data = load_arrays_from_hdf5(hdf5_path)
@@ -182,26 +182,26 @@ end
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-function compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
+function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
 
-    iso   = ld.iso[iλ]                                               # 
-    λ210  = ld.λ210[iλ]                                              # m
-    ΔE21  = ld.ΔE21[iλ]                                              # J        
-    E1    = ld.E1[iλ]                                                # J
-    E2    = ld.E2[iλ]                                                # J
-    A21   = ld.A21[iλ]                                               # 1/s
-    B21   = ld.B21[iλ]                                               # m^3 / (J * s^2)
-    B12   = ld.B12[iλ]                                               # m^3 / (J * s^2)
-    g2    = ld.g2[iλ]                                                # 
-    g1    = ld.g1[iλ]                                                # 
-    S21r  = ld.S21r[iλ]                                              # m
-    γair  = ld.γair[iλ]                                              # 1 / (m * Pa)
-    γself = ld.γself[iλ]                                             # 1 / (m * Pa)
-    nair  = ld.nair[iλ]                                              # 
-    δair  = ld.δair[iλ]                                              # 1 / (m * Pa)
+    iso   = line_data.iso[iλ]                                               # 
+    λ210  = line_data.λ210[iλ]                                              # m
+    ΔE21  = line_data.ΔE21[iλ]                                              # J        
+    E1    = line_data.E1[iλ]                                                # J
+    E2    = line_data.E2[iλ]                                                # J
+    A21   = line_data.A21[iλ]                                               # 1/s
+    B21   = line_data.B21[iλ]                                               # m^3 / (J * s^2)
+    B12   = line_data.B12[iλ]                                               # m^3 / (J * s^2)
+    g2    = line_data.g2[iλ]                                                # 
+    g1    = line_data.g1[iλ]                                                # 
+    S21r  = line_data.S21r[iλ]                                              # m
+    γair  = line_data.γair[iλ]                                              # 1 / (m * Pa)
+    γself = line_data.γself[iλ]                                             # 1 / (m * Pa)
+    nair  = line_data.nair[iλ]                                              # 
+    δair  = line_data.δair[iλ]                                              # 1 / (m * Pa)
 
     if iso > 11
         @warne mid, lid, λ210
@@ -252,9 +252,10 @@ end
     NCO2 - CO2 concentration
 No4
 """
-function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, linedata::LineData, Qref, Qiso, miso, c, T, N, p)
-    Threads.@threads for iλ in eachindex(linedata.λ210)
-        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(linedata, Qref, Qiso, miso, c, T, N, p, iλ)
+function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, c, T, N, p)
+    iλ = 25000
+    Threads.@threads for iλ in eachindex(line_data.λ210)
+        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, c, T, N, p, iλ)
         linedata_pTNc_spec[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
     end
 end
@@ -266,29 +267,35 @@ end
     N - density
     ML = ML[:CO2]
 """
-function sum_over_lines(par, linedata_pTNc_spec)
-    λb = par.λb
-    
+function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)    
+    f_Δλ_factor = par[:f_Δλ_factor]
+    fL_adapt    = par[:fL_adapt]
+    fG_adapt    = par[:fG_adapt]
+
     λ1   = λb[1]
     λend = λb[end]
     Δλ   = λend - λ1
     dλ   = λb[2] - λ1
     nλb  = length(λb)
 
-    nbthreads = Threads.nthreads()
-    κbt = alloc2(par.prealloc, :κbt, nλb, nbthreads, true)
-    ϵbt = alloc2(par.prealloc, :ϵbt, nλb, nbthreads, true)
-    κb = alloc1(par.prealloc, :κb, nλb, true)
-    ϵb = alloc1(par.prealloc, :ϵb, nλb, true)
+    nbthreads = 1#Threads.nthreads()
 
-    λ21  = linedata_pTNc_spec[3, :]
-    index = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
-    ML = linedata_pTNc_spec[:,index]
+    κbt = alloc2(prealloc, :κbt, nλb, nbthreads, true)
+    ϵbt = alloc2(prealloc, :ϵbt, nλb, nbthreads, true)
+    κb  = alloc1(prealloc, :κb,  nλb, true)
+    ϵb  = alloc1(prealloc, :ϵb,  nλb, true)
+
+    λ21     = linedata_pTNc_spec[3, :]
+    index   = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
+    ML      = linedata_pTNc_spec[:,index]
     n1, nλl = size(ML)
 
     il = 1
-    Threads.@threads for il in 1:nλl
-        tid = Threads.threadid()
+    tid = 1
+
+    #Threads.@threads 
+    for il in 1:nλl
+        tid = 1#Threads.threadid()
 
         λ21  = ML[ 3, il]
         ΔλLh = ML[ 5, il]*0.5
@@ -298,13 +305,13 @@ function sum_over_lines(par, linedata_pTNc_spec)
 
         iλb = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
 
-        δiλ = max(2, floor(Int64, (ΔλLh + ΔλGh) * par.f_Δλ_factor / dλ))
+        δiλ = max(2, floor(Int64, (ΔλLh + ΔλGh) * f_Δλ_factor / dλ))
         iλm = max(  1, iλb - δiλ)
         iλp = min(nλb, iλb + δiλ + 1)
 
-        # fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, par.fG_adapt)        
-        # fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, par.fL_adapt)
-        fb = voigt(λb[iλm:iλp], λb[iλb], ΔλLh, ΔλGh, par.fL_adapt, par.fG_adapt)
+        # fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, fG_adapt)        
+        # fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, fL_adapt)
+        fb = voigt(λb[iλm:iλp], λb[iλb], ΔλLh, ΔλGh, fL_adapt, fG_adapt)
 
         κbt[iλm:iλp, tid] += @. κ * fb
         ϵbt[iλm:iλp, tid] += @. ϵ * fb
@@ -313,14 +320,16 @@ function sum_over_lines(par, linedata_pTNc_spec)
     κb[:] = sum(κbt,dims=2)
     ϵb[:] = sum(ϵbt,dims=2)
 
-    #plt.plot(κb[:])
     κb, ϵb
 end
 
 function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κb::Vector{Float64}, ϵb::Vector{Float64},  Δs::Float64, par)
+    κΔs_limit     = par[:κΔs_limit]
+    with_emission = par[:with_emission]
+
     exp_κ = exp.(-κb .* Δs)
-    if par.with_emission
-        eps    = @. ifelse(abs(κb) * Δs < par.κΔs_limit, ϵb*Δs, ϵb/κb*(1.0-exp_κ)) # ϵb/κb*(1.0-exp_κ) ≈ ϵb*Δs
+    if with_emission
+        eps    = @. ifelse(abs(κb) * Δs < κΔs_limit, ϵb*Δs, ϵb/κb*(1.0-exp_κ)) # ϵb/κb*(1.0-exp_κ) ≈ ϵb*Δs
         Iλb[:] = @. Iλb * exp_κ + eps
     else
         Iλb[:] = @. Iλb * exp_κ
@@ -347,3 +356,16 @@ function add_background()
 #        end
 end
 
+function get_line_data(par, moleculardata; renew_hdf5=false)
+    datfiles = get_data_files()
+    if renew_hdf5
+        for spec in par[:species]
+            hitran_to_hdf5(spec, datfiles[spec][out], datfiles[spc][:hdf5], datfiles[spec][:hdf5_compact], par[:λmin], par[:λmax], length(moleculardata[:spec].iso_a))
+        end
+    end
+    line_data = Dict{Symbol,LineData}()
+    for spec in par[:species]
+        line_data[spec] = LineData(datfiles[spec][:hdf5_compact]);
+    end
+    line_data
+end

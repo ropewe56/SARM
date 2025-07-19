@@ -54,7 +54,7 @@ function ResultDB(dbpath, csih)
 end
 
 function create_results_db(par)
-    rdb = ResultDB(par.paths.dbpath, par.c_ppm)
+    rdb = ResultDB(par[:paths][:dbpath], par[:c_ppm])
     rdb
 end
 
