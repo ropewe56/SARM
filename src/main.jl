@@ -12,7 +12,7 @@ par[:c_ppm]     = Dict(:CO2 => [430.0]) # 278.0, 430.0, 278.0*2.0
 
 atm             = Atmosphere(par);
 molec_data_dict = get_molecular_data(par);
-line_data_dict  = get_line_data(par, molecular_data);
+line_data_dict  = get_line_data(par, molec_data_dict);
 
 par[:paths] = make_outpaths();
 write_atm_to_hdf5(par[:paths], atm)

@@ -133,6 +133,6 @@ root = readdir(results_root)[end]
 
 #plot_planck(root, 10.0e-6, 20.0e-6)
 
-species, hdf5_paths, h, ih = get_results(root, 1, 1, 0.0);
+species, hdf5_paths, h, ih = get_results(root, 1, 1, 70000.0);
 hdf5_path = hdf5_paths[ih]
 plot_result(hdf5_path)

@@ -227,7 +227,8 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
     N2  = g2 * exp(- E2 * β) / Qiso[iso] * Nspec
 
     # emission [W/m^2]
-    ϵ = c_h * λ21 * A21 * dΩ/(4.0*π) *  N2                           # [J / (m^2 * sr)]
+    ϵ = hc/λ21 * N2 * A21 * dΩ / (4.0 * π)
+    #ϵ = c_h * λ21 * A21 * dΩ/(4.0*π) *  N2                           # [J / (m^2 * sr)]
     # ϵ * f(λ) * dz                                                  # [J / (m^2 * sr) / m * m] 
 
     # absorption coefficient [1]
@@ -253,7 +254,7 @@ end
 No4
 """
 function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, c, T, N, p)
-    iλ = 25000
+    iλ = argmin(line_data.E1)
     Threads.@threads for iλ in eachindex(line_data.λ210)
         iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, c, T, N, p, iλ)
         linedata_pTNc_spec[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
@@ -329,8 +330,8 @@ function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κb::Vector{Float64
 
     exp_κ = exp.(-κb .* Δs)
     if with_emission
-        eps    = @. ifelse(abs(κb) * Δs < κΔs_limit, ϵb*Δs, ϵb/κb*(1.0-exp_κ)) # ϵb/κb*(1.0-exp_κ) ≈ ϵb*Δs
-        Iλb[:] = @. Iλb * exp_κ + eps
+        ϵ = @. ifelse(abs(κb) * Δs < κΔs_limit, ϵb*Δs, ϵb/κb*(1.0-exp_κ)) # ϵb/κb*(1.0-exp_κ) ≈ ϵb*Δs
+        Iλb[:] = Iλb .* exp_κ .+ ϵ
     else
         Iλb[:] = @. Iλb * exp_κ
     end

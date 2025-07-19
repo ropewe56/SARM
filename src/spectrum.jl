@@ -162,7 +162,7 @@ function integrate_along_path(par, prealloc, rdb, atm, molec_data_dict::Dict{Sym
             @. ϵb += val
         end
 
-        integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par) # 3
+        integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par)
         push!(tt, time_ns())
 
         hdf5_path = if atm.h_iout[ih] == 1
