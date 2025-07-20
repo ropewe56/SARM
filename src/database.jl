@@ -23,13 +23,13 @@ function ResultDB(dbpath, csih)
         @warne "database", dbpath, "exists"
     end
 
-    colnames = ["hdf5_path", "ic", "iθ", "ih", "h", "θ",   "T",  "N", "species"]
-    coltypes = [String, Int,  Int,   Int, Real, Real, Real,  Real, String]
+    colnames = ["hdf5_path", "ic", "iθ", "ih", "h", "θ",  "T",  "N", "int_I", "int_ϵ", "int_Iκ", "species"]
+    coltypes = [String, Int,  Int,   Int, Real, Real, Real,  Real, Real, Real, Real,  Real, String]
     
     species = collect(keys(csih))
     for spec in species
-        colnames = cat(colnames, ["cih$spec", "ΔλL$spec", "ΔλD$spec", "int_I$spec", "int_ϵ$spec", "int_κ$spec", "int_Iκ$spec"], dims=1)
-        coltypes = cat(coltypes, [Real, Real, Real, Real, Real, Real, Real], dims=1)
+        colnames = cat(colnames, ["cih$spec", "ΔλL$spec", "ΔλD$spec", "int_ϵs$spec", "int_Iκs$spec", "mean_κs$spec"], dims=1)
+        coltypes = cat(coltypes, [Real, Real, Real, Real, Real, Real], dims=1)
     end
     
     #length(colnames)
@@ -53,7 +53,7 @@ function ResultDB(dbpath, csih)
     ResultDB(dbpath, db, cln, rowqm, species)
 end
 
-function create_results_db(par)
+function create_result_db(par)
     rdb = ResultDB(par[:paths][:dbpath], par[:c_ppm])
     rdb
 end
@@ -62,14 +62,16 @@ function open_db(dbpath)
     SQLite.DB(dbpath)
 end
 
-function insert_into_rdb(rdb::ResultDB, ic, iθ, ih, h, θ, T, N, cihic, ΔλL_mean, ΔλD_mean, int_I, int_ϵ, int_κ, int_Iκ, htf5_path)
+function insert_into_resultdb(result_db::ResultDB, hdf5_path::String, ic::Int64, iθ::Int64, ih::Int64, 
+                                h::Float64, θ::Float64, T::Float64, N::Float64, cihic, ΔλL_mean, ΔλD_mean, 
+                                int_I, int_ϵ, int_Iκ, int_ϵs, mean_κs, int_Iκs)
     species = collect(keys(cihic))
-    row = Array{Any}([htf5_path, ic, iθ, ih, h, θ, T, N, list_to_string(rdb.species)])
-    for spec in rdb.species
-        row = cat(row, [cihic[spec], ΔλL_mean[spec], ΔλD_mean[spec], int_I[1], int_ϵ[1][spec], int_κ[1][spec], int_Iκ[1][spec]], dims=1)
+    row = Array{Any}([hdf5_path, ic, iθ, ih, h, θ, T, N, int_I[1], int_ϵ[1], int_Iκ[1], list_to_string(result_db.species)])
+    for spec in result_db.species
+        row = cat(row, [cihic[spec], ΔλL_mean[spec], ΔλD_mean[spec], int_ϵs[spec][1], int_Iκs[spec][1], mean_κs[spec][1]], dims=1)
     end
 
-    DBInterface.execute(rdb.db, @sprintf("INSERT INTO results (%s) VALUES (%s);", rdb.colnames, rdb.rowqm), row)
+    DBInterface.execute(result_db.db, @sprintf("INSERT INTO results (%s) VALUES (%s);", result_db.colnames, result_db.rowqm), row)
 end
 
 function select_from_rdb(db; ic=1, iθ=1)

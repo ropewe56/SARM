@@ -3,12 +3,24 @@ using JSON3
 using Dates
 using Printf
 
-const OUTROOT = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results"
-
-function make_outpaths()
+function make_subdir()
     d = Dates.now()
-    subdir = @sprintf("%s", d)[1:16]
+    @sprintf("%s", d)
+end
 
+function clear_subdir(subdir)
+    rmpath = @sprintf("%s/*", joinpath(OUTROOT, subdir))
+    run(`rm -rf $rmpath`)
+end
+
+function rm_subdirs(subdirs)
+    for sd in subdirs
+        rmpath = @sprintf("%s", joinpath(OUTROOT, sd))
+        run(`rm -rf $rmpath`)
+    end
+end
+
+function make_outpaths(subdir)
     root      = joinpath(OUTROOT, subdir)
     intensity = joinpath(root, "intensity")
     spectrum  = joinpath(root, "spectrum")
@@ -31,7 +43,6 @@ function make_outpaths()
     )
 end
 
-
 function get_parameter()
     Dict{Symbol, Any}(
         :κΔs_limit           => 0.01,
@@ -53,12 +64,12 @@ function get_parameter()
         :background          => 1.0,
         :T_of_h              => true,
         :N_of_h              => true,
-        :with_emission       => true,
+        :omit_absorb_emit    => [:omit_none, :omit_emission, :omit_absorption][1],
         :integrate           => true,
         :θ                   => [0.0],
         :species             => [:H2O, :CO2],
         :c_ppm               => Dict(:a => [1.0,10.0]),
-        :nbc                 => 1,
+        :nc                  => 1,
         :hmethod             => :equalnumber,
         :hmin                => 0.0,
         :hmax                => 70000.0,
@@ -74,13 +85,12 @@ end
 function parameter_init(par)
     par[:nλb] = floor(Int64, (par[:λmax] - par[:λmin]) / par[:Δλb])
     λb  = collect(range(par[:λmin], par[:λmax], par[:nλb]))
-    create_planck_spectrum(par, λb)
 
     for spec in keys(par[:c_ppm])
         par[:c_ppm][spec][:] *= PPM 
     end
     cch0 = [par[:c_ppm][k][1] for k in keys(par[:c_ppm])]
-    par[:nbc] = maximum([length(par[:c_ppm][k]) for k in keys(par[:c_ppm])])
+    par[:nc] = maximum([length(par[:c_ppm][k]) for k in keys(par[:c_ppm])])
 
     to_json(joinpath(par[:paths][:outroot], "parameter.json"), par)
 end
@@ -124,19 +134,7 @@ function from_json(json_path)
         par.k = v
     end
 
-
     RunParameter(; dict...)
 end
 
-#json_path = "jsonpath.json"
-#to_json("jsonpath.json", par)
-#par = from_json("jsonpath.json")
-
-using Parameters
-@with_kw mutable struct Dog
-    name::String
-    breed::Symbol = :husky
-end
-
-d = Dict([:name => "x", :breed => :wolf])
-Dog(; d...)
+make_λb(par) = collect(range(par[:λmin], par[:λmax], par[:nλb]))

@@ -1,9 +1,5 @@
 using Interpolations
 
-const PPM = 1.0e-6
-const C0H2O_PPM = 7966.0
-const MOLECULE_SYMBOLS = [:H2O, :CO2]
-
 """
     CH2O_concentration(hi)
     normalized concentraion at height points hi

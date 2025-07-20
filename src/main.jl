@@ -1,4 +1,5 @@
 include("include_sarm.jl")
+include("postprocessing/plot_results.jl")
 
 par = get_parameter()
 
@@ -10,14 +11,25 @@ par[:species]   = [:CO2]
 par[:c_ppm]     = Dict(:H2O => fill(C0H2O_PPM, 3), )
 par[:c_ppm]     = Dict(:CO2 => [430.0]) # 278.0, 430.0, 278.0*2.0
 
-atm             = Atmosphere(par);
-molec_data_dict = get_molecular_data(par);
+par[:λmin]      = 13.5e-6
+par[:λmax]      = 16.5e-6
+
+atmosphere      = Atmosphere(par);
+molec_data_dict = get_molecular_data(par, atmosphere);
 line_data_dict  = get_line_data(par, molec_data_dict);
 
-par[:paths] = make_outpaths();
-write_atm_to_hdf5(par[:paths], atm)
-rdb = create_results_db(par);
+subdirs = readdir(OUTROOT)
+rm_subdirs(readdir(OUTROOT)[1:end])
+
+subdir = make_subdir()
+clear_subdir(subdir)
+par[:paths] = make_outpaths(subdir);
+
+result_db = create_result_db(par);
 parameter_init(par)
 
+create_planck_spectrum(par, par[:λb]);
+write_atmosphere_to_hdf5(par[:paths], atmosphere);
+prealloc = Preallocated();
 
-integrate(par, rdb, atm, molec_data_dict, line_data_dict)
+integrate(par, result_db, atmosphere, molec_data_dict, line_data_dict, prealloc)

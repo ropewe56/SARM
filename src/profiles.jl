@@ -1,8 +1,6 @@
 using PhysConst
 using SimpleLog
 
-const LOG2 = log(2.0)
-
 @inline function adapt_f(λ, λ0, Δλh, f, f_adapt)
     if f_adapt == :none
         return f
@@ -20,18 +18,18 @@ const LOG2 = log(2.0)
     end
 end
 
-@inline function f_gauss(λ::Vector{Float64}, λ0, ΔλGh, fG_adapt)
+@inline function f_gauss(λ, λ0, ΔλGh, fG_adapt)
     a = LOG2/ΔλGh^2
     f = @. sqrt(a/π) * exp(- a * (λ - λ0)^2)
     adapt_f(λ, λ0, ΔλGh, f, fG_adapt)
 end
 
-@inline function f_lorentz(λ::Vector{Float64}, λ0, ΔλLh, fL_adapt)
+@inline function f_lorentz(λ, λ0, ΔλLh, fL_adapt)
     f = @. 1.0 / (π * ΔλLh * (1.0 + ((λ - λ0)/ΔλLh)^2))
     adapt_f(λ, λ0, ΔλLh, f, fL_adapt)
 end
 
-@inline function voigt(λ::Vector{Float64}, λ0, ΔλLh, ΔλGh, fL_adapt, fG_adapt)
+@inline function voigt(λ, λ0, ΔλLh, ΔλGh, fL_adapt, fG_adapt)
     fL = f_lorentz(λ, λ0, ΔλLh, fL_adapt)
     v = ΔλLh / ΔλGh
     v = max(0.0, 1.36606 * v - 0.47719 *v^2 + 0.11116 * v^3)

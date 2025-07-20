@@ -18,7 +18,7 @@ function save_spectrum_as_hdf5(hdf5_path1, hdf5_path2, λb, Iλb, κb, ϵb, md)
 
 end
 
-function write_atm_to_hdf5(paths, atm)
+function write_atmosphere_to_hdf5(paths, atm)
     hdf5_path = joinpath(paths[:atm], "atm.hdf5")
     groups = Dict("atm" => Dict("h" => atm.h, "p" => atm.p, "T" => atm.T, "N" => atm.N))
     save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    

@@ -5,8 +5,6 @@ using Interpolations
 using DataFrames
 using CSV
 
-const TREF = 296.0 # https://hitran.org/docs/definitions-and-units/
-
 @inline function S_T(S21r, E1, E2, β, βr, QT, QTr)
     ΔE21 = E2-E1
     S21r * QTr/QT * exp(-E1*(β+βr)) * (1.0-exp(-ΔE21*β)) / (1.0-exp(-ΔE21*βr))
@@ -76,7 +74,7 @@ function load_hitran_data(hitran_out, λmin, λmax, iso_max)
     S21r = S21r .* 1.0e-2                                            # [m]
 
     # Einstein coefficient of induced emission
-    B21 = @. A21 * λ210^3 / (8.0*π * c_h)                            # [m^3 / s / Js] = [m^3 / J / s^2]
+    B21 = @. A21 * λ210^3 / (8π * c_h)                            # [m^3 / s / Js] = [m^3 / J / s^2]
     # Einstein coefficient of absorption
     B12 = @. g2 / g1 * B21;
 
@@ -182,7 +180,7 @@ end
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
+function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, ciso, T, N, p, iλ)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
@@ -207,36 +205,34 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
         @warne mid, lid, λ210
     end
 
-    Nspec = c*N                                                      #  [1/m^3]
-    hc = c_h*c_c                                                     #  [J*m]
+    Niso = ciso * N                                                         #  [1/m^3]
 
     # pressure shift
     λ21 = λ210 / (1.0 + δair * λ210 * p)
-    Δpλ210 = λ21 - λ210
 
     # Lorentzian (pressure-broadened) HWHM, γ(p,T) 
     # γpT = (TREF/T)^nair * (γair * (p - pself) + γself*pself)
-    γp = (TREF/T)^nair * (γair * p * (1.0 - c) + γself * p * c)      # [1/m]
+    γp = (TREF/T)^nair * (γair * p * (1.0 - ciso) + γself * p * ciso)      # [1/m]
     ΔλL = λ21^2 * γp                                                 # [m]
 
     # Doppler broadening
     ΔλG = sqrt(2.0 * c_kB * T / miso[iso]) / c_c * λ21
 
     # occupation numbers
-    N1  = g1 * exp(- E1 * β) / Qiso[iso] * Nspec
-    N2  = g2 * exp(- E2 * β) / Qiso[iso] * Nspec
+    N1  = g1 * exp(- E1 * β) / Qiso[iso] * Niso
+    N2  = g2 * exp(- E2 * β) / Qiso[iso] * Niso
 
     # emission [W/m^2]
     ϵ = hc/λ21 * N2 * A21 * dΩ / (4.0 * π)
-    #ϵ = c_h * λ21 * A21 * dΩ/(4.0*π) *  N2                           # [J / (m^2 * sr)]
-    # ϵ * f(λ) * dz                                                  # [J / (m^2 * sr) / m * m] 
+    # ϵ = c_h * λ21 * A21 * dΩ/(4.0*π) *  N2                          # [J / (m^2 * sr)]
+    # ϵ * f(λ) * dz                                                   # [J / (m^2 * sr) / m * m] 
 
     # absorption coefficient [1]
-    κ1 = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)                     # Js * m * s/m / m^3 * m^3/(J*s^2) = 1
-    # I * κ * f(λ) * dz                                              # [J/m^2 * 1/m * m]
+    κ1 = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)                      # Js * m * s/m / m^3 * m^3/(J*s^2) = 1
+    # I * κ * f(λ) * dz                                               # [J/m^2 * 1/m * m]
 
-    S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Nspec    # [1/m^2]  
-    κ2   = S21 * λ210^2                                              # [1]
+    S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
+    κ2   = S21 * λ210^2                                               # [1]
 
 
     iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ1, κ2
@@ -280,6 +276,9 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
     nλb  = length(λb)
 
     nbthreads = 1#Threads.nthreads()
+    tid = 1
+    iλl = 1
+
 
     κbt = alloc2(prealloc, :κbt, nλb, nbthreads, true)
     ϵbt = alloc2(prealloc, :ϵbt, nλb, nbthreads, true)
@@ -291,31 +290,33 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
     ML      = linedata_pTNc_spec[:,index]
     n1, nλl = size(ML)
 
-    il = 1
-    tid = 1
+    λ21  = ML[3,:]
+    ΔλLh = ML[5,:] .* 0.5
+    ΔλGh = ML[6,:] .* 0.5
+    ϵ    = ML[10,:]
+    κ    = ML[11,:]
+
+    iλb = @. floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
+    δiλ = @. floor(Int64, (ΔλLh + ΔλGh) * f_Δλ_factor / dλ)
+    iλm = @. max(1, iλb - δiλ)
+    iλp = @. min(nλb, iλb + δiλ + 1)
+
+    # fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, fG_adapt)        
+    # fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, fL_adapt)
 
     #Threads.@threads 
-    for il in 1:nλl
+    for iλl in 1:nλl 
         tid = 1#Threads.threadid()
+        
+        iλb_ = iλb[iλl]
+        iλm_ = iλm[iλl]
+        iλp_ = iλp[iλl]
+        λrange = @view λb[iλm_:iλp_]
 
-        λ21  = ML[ 3, il]
-        ΔλLh = ML[ 5, il]*0.5
-        ΔλGh = ML[ 6, il]*0.5
-        ϵ    = ML[10, il]
-        κ    = ML[11, il]
+        fb = voigt(λrange, λb[iλb_], ΔλLh[iλl], ΔλGh[iλl], fL_adapt, fG_adapt)
 
-        iλb = floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
-
-        δiλ = max(2, floor(Int64, (ΔλLh + ΔλGh) * f_Δλ_factor / dλ))
-        iλm = max(  1, iλb - δiλ)
-        iλp = min(nλb, iλb + δiλ + 1)
-
-        # fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, fG_adapt)        
-        # fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, fL_adapt)
-        fb = voigt(λb[iλm:iλp], λb[iλb], ΔλLh, ΔλGh, fL_adapt, fG_adapt)
-
-        κbt[iλm:iλp, tid] += @. κ * fb
-        ϵbt[iλm:iλp, tid] += @. ϵ * fb
+        κbt[iλm_:iλp_, tid] += @. κ[iλl] * fb
+        ϵbt[iλm_:iλp_, tid] += @. ϵ[iλl] * fb
     end
 
     κb[:] = sum(κbt,dims=2)
@@ -324,16 +325,27 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
     κb, ϵb
 end
 
+@doc raw"""
+    $I = I(0) + ϵ/κ (1 - \exp(-κ z))$
+    $k << 1: I = I(0) + ϵ z$
+    $k >> 1: I = I(0) + ϵ / κ$
+"""
 function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κb::Vector{Float64}, ϵb::Vector{Float64},  Δs::Float64, par)
     κΔs_limit     = par[:κΔs_limit]
-    with_emission = par[:with_emission]
+    omit_absorb_emit = par[:omit_absorb_emit]
 
-    exp_κ = exp.(-κb .* Δs)
-    if with_emission
-        ϵ = @. ifelse(abs(κb) * Δs < κΔs_limit, ϵb*Δs, ϵb/κb*(1.0-exp_κ)) # ϵb/κb*(1.0-exp_κ) ≈ ϵb*Δs
-        Iλb[:] = Iλb .* exp_κ .+ ϵ
-    else
-        Iλb[:] = @. Iλb * exp_κ
+    #plt.plot(Iλb)
+
+    if omit_absorb_emit == :omit_none
+        κbΔs = κb .* Δs
+        Iλb[:] = @. ifelse(κbΔs < κΔs_limit, 
+                        Iλb .* exp.(-κbΔs) .+ ϵb.*Δs, 
+                        Iλb .* exp.(-κbΔs) .+ ϵb./κb.*(1.0 .- exp.(-κbΔs)))
+    elseif omit_absorb_emit == :omit_emission
+        Iλb[:] = @. Iλb + ϵb*Δs
+    else omit_absorb_emit == :emission_absorption
+        κbΔs = κb .* Δs
+        Iλb[:] = @. Iλb * exp.(-κbΔs)
     end
 end
 

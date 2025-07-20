@@ -4,16 +4,14 @@ using Printf
 import PyPlot as plt
 plt.pygui(true)
 
-results_root = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results"
-
 function get_list()
-    readdir(results_root)
+    readdir(OUTROOT)
 end
 
 function plot_planck(root, λ1, λ2)
-    path_pls = joinpath(results_root, root, "intensity", "planck_single.hdf5")
-    path_plm = joinpath(results_root, root, "intensity", "planck_multi.hdf5")
-    path_Ii  = joinpath(results_root, root, "intensity", "initial_intensity.hdf5")
+    path_pls = joinpath(OUTROOT, root, "intensity", "planck_single.hdf5")
+    path_plm = joinpath(OUTROOT, root, "intensity", "planck_multi.hdf5")
+    path_Ii  = joinpath(OUTROOT, root, "intensity", "initial_intensity.hdf5")
 
     pls = load_groups_as_hdf5(path_pls)
     plm = load_groups_as_hdf5(path_plm)
@@ -40,10 +38,10 @@ function plot_planck(root, λ1, λ2)
     plt.legend()
 end
 
-function get_results(root, ic, iθ, hi)
-    dbpath = joinpath(results_root, root, "db.sqlite3")
+function get_results(root, ic, iθ)
+    dbpath = joinpath(OUTROOT, root, "db.sqlite3")
     db = open_db(dbpath)
-    df = select_from_rdb(db, ic=1, iθ=1)
+    df = select_from_rdb(db, ic=ic, iθ=iθ)
 
     for n in names(df)
         @printf("%s  ", n)
@@ -51,25 +49,16 @@ function get_results(root, ic, iθ, hi)
     @printf("\n")
 
     h  = df[!,"h"]
-    ih = max(1, min(length(h), argmin(abs.(h .- hi))))
-
     species = split(df[1,"species"], ",")
-    for spec in species
-        cih = df[!,"cih"*spec][ih]
-        I   = df[!,"int_I"*spec][ih]
-        κ   = df[!,"int_κ"*spec][ih]
-        ϵ   = df[!,"int_ϵ"*spec][ih]
-        Iκ  = df[!,"int_Iκ"*spec][ih]
-        ΔλD = df[!,"ΔλD"*spec][ih]
-        ΔλL = df[!,"ΔλL"*spec][ih]
-        @infoe spec, cih, I, κ, ϵ, Iκ, ΔλL, ΔλD
-    end
-
-    species, df[!,"hdf5_path"], h, ih
+    int_I   = df[!,"int_I"]
+    int_ϵ   = df[!,"int_ϵ"]
+    int_Iκ  = df[!,"int_Iκ"]
+    
+    df[!,"hdf5_path"], h, int_I, int_ϵ, int_Iκ
 end
 
 function plot_result(hdf5_path)
-    path_Ii  = joinpath(results_root, root, "intensity", "initial_intensity.hdf5")
+    path_Ii  = joinpath(OUTROOT, root, "intensity", "initial_intensity.hdf5")
     pli = load_groups_as_hdf5(path_Ii)
     p = pli["TλI"]
     λi, Ii = p["λ"], p["I"]
@@ -92,7 +81,6 @@ function plot_result(hdf5_path)
     κl2 = data["κl2_CO2"]
 
     plt.figure()
-
     plt.plot(λ,I)
     plt.plot(λi,Ii)
     plt.xlabel("λ")
@@ -129,10 +117,35 @@ function plot_result(hdf5_path)
     plt.ylabel("Sl")
 end
 
-root = readdir(results_root)[end]
+function plot_spectra(hdf5_paths)
+    for hdf5_path in hdf5_paths
+        groups = load_groups_as_hdf5(hdf5_path)
+        data = groups["sarm"]
+        λ = data["λ"]
+        I = data["I"]
+        #ϵ = data["ϵ"]
+        #κ = data["κ"]
 
-#plot_planck(root, 10.0e-6, 20.0e-6)
+        plt.plot(λ, I)    
+    end
+end
 
-species, hdf5_paths, h, ih = get_results(root, 1, 1, 70000.0);
-hdf5_path = hdf5_paths[ih]
-plot_result(hdf5_path)
+function runit()
+    root = readdir(OUTROOT)[end]
+
+    #plot_planck(root, 10.0e-6, 20.0e-6)
+
+    ih = max(1, min(length(h), argmin(abs.(h .- hi))))
+
+    hdf5_paths, h, int_I, int_ϵ, int_Iκ = get_results(root, 1, 1);
+    
+    plt.plot(h,int_I)
+    plt.plot(h,int_ϵ) 
+    plt.plot(h,int_Iκ)
+
+    hdf5_path = hdf5_paths[1]
+
+    plot_result(hdf5_path)
+
+     plot_spectra([hdf5_paths[end]])
+end

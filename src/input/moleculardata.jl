@@ -128,31 +128,11 @@ function MolecularData(species, atm, isopath, TQmin, TQmax)
     MolecularData(species, Qref, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
 end
 
-
-function test()
-    Tmin, Tmax, nT = 200.0,300.0, 100
-    λmin, λmax = 14.0e-6, 16.0e-6
-
-    datadir = "/home/wester/Projects/Julia/Climate-Energy/SARM/data"
-
-    H2Oiso = joinpath(datadir, "H2O", "H2O_Q", "H2O_Isotopes.txt")
-    CO2iso = joinpath(datadir, "CO2", "CO2_Q", "CO2_Isotopes.txt")
-
-    H2Oout = joinpath(datadir, "H2O", "H2O_rwfmt_ISO-0-1.out")
-    CO2out = joinpath(datadir, "H2O", "CO2_rwfmt_ISO-0-12_wl-12-18-mum.out")
-
-    mdH2O = get_TQ(H2Oiso, Tmin, Tmax, nT);
-    mdCO2 = get_TQ(CO2iso, Tmin, Tmax, nT);
-
-    H2O_line_data = get_line_data(H2Oout, λmin, λmax);
-    CO2_line_data = get_line_data(CO2out, λmin, λmax);
-end
-
-function get_molecular_data(par)
+function get_molecular_data(par, atmosphere)
     datfiles = get_data_files()
     md = Dict{Symbol,MolecularData}()
     for spec in par[:species]
-        md[spec] = MolecularData(spec, atm, datfiles[spec][:Q], par[:TQmin], par[:TQmax])
+        md[spec] = MolecularData(spec, atmosphere, datfiles[spec][:Q], par[:TQmin], par[:TQmax])
     end
     md
 end
