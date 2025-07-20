@@ -71,12 +71,12 @@ function get_parameter()
         :c_ppm               => Dict(:a => [1.0,10.0]),
         :nc                  => 1,
         :hmethod             => :equalnumber,
+        :nh                  => 500,
         :hmin                => 0.0,
         :hmax                => 70000.0,
         :dhmin               => 10.0,
-        :dhmax               => 20000.0,
+        :dhmax               => 500.0,
         :e                   => 2.0,
-        :nh                  => 50,
         :outdir              => "results",
         :paths               => Dict()
     )

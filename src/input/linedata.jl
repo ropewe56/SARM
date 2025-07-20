@@ -33,8 +33,8 @@ function load_hitran_data(hitran_out, λmin, λmax, iso_max)
     # molec_id, local_iso_id, nu, sw, a, gamma_air, gamma_self, elower, n_air, delta_air, gp, gpp
     df0 = CSV.read(hitran_out, DataFrame)
 
-    νmax = 1.0e-2/λmin
-    νmin = 1.0e-2/λmax
+    νmax = _cm/λmin
+    νmin = _cm/λmax
     ids(x) = @. ( (x >= νmin) && (x < νmax) )
     df = df0[ids(df0.nu),:]
 
@@ -60,21 +60,21 @@ function load_hitran_data(hitran_out, λmin, λmax, iso_max)
 
     hc    = c_h*c_c
 
-    ν1_m  = ν1  ./ 1.0e-2                                            # [1/m]
-    ν21_m = ν21 ./ 1.0e-2                                            # [1/m]
+    ν1_m  = ν1  ./ _cm                                               # [1/m]
+    ν21_m = ν21 ./ _cm                                               # [1/m]
     λ210  = 1.0 ./ ν21_m                                             # [m]
     E1    = hc  .* ν1_m                                              # [J]
     ΔE21  = hc  ./ λ210                                              # [J] 
     E2    = E1  .+ ΔE21                                              # [J]
 
-    γair  = γair  ./ (1.0e-2 * 1.01325e5)                            # [1/(m*Pa)] , cm => m, atm => pascal
-    γself = γself ./ (1.0e-2 * 1.01325e5)                            # [1/(m*Pa)] , cm => m, atm => pascal
-    δair  = δair  ./ (1.0e-2 * 1.01325e5)                            # [1/(m*Pa)] , cm => m, atm => pascal
+    γair  = γair  ./ (_cm * _atm)                                    # [1/(m*Pa)] , cm => m, atm => pascal
+    γself = γself ./ (_cm * _atm)                                    # [1/(m*Pa)] , cm => m, atm => pascal
+    δair  = δair  ./ (_cm * _atm)                                    # [1/(m*Pa)] , cm => m, atm => pascal
 
-    S21r = S21r .* 1.0e-2                                            # [m]
+    S21r = S21r .* _cm                                               # [m]
 
     # Einstein coefficient of induced emission
-    B21 = @. A21 * λ210^3 / (8π * c_h)                            # [m^3 / s / Js] = [m^3 / J / s^2]
+    B21 = @. A21 * λ210^3 / (8π * c_h)                               # [m^3 / s / Js] = [m^3 / J / s^2]
     # Einstein coefficient of absorption
     B12 = @. g2 / g1 * B21;
 
@@ -180,26 +180,26 @@ end
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, ciso, T, N, p, iλ)
+function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, ciso, T, N, p, iλl)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
 
-    iso   = line_data.iso[iλ]                                               # 
-    λ210  = line_data.λ210[iλ]                                              # m
-    ΔE21  = line_data.ΔE21[iλ]                                              # J        
-    E1    = line_data.E1[iλ]                                                # J
-    E2    = line_data.E2[iλ]                                                # J
-    A21   = line_data.A21[iλ]                                               # 1/s
-    B21   = line_data.B21[iλ]                                               # m^3 / (J * s^2)
-    B12   = line_data.B12[iλ]                                               # m^3 / (J * s^2)
-    g2    = line_data.g2[iλ]                                                # 
-    g1    = line_data.g1[iλ]                                                # 
-    S21r  = line_data.S21r[iλ]                                              # m
-    γair  = line_data.γair[iλ]                                              # 1 / (m * Pa)
-    γself = line_data.γself[iλ]                                             # 1 / (m * Pa)
-    nair  = line_data.nair[iλ]                                              # 
-    δair  = line_data.δair[iλ]                                              # 1 / (m * Pa)
+    iso   = line_data.iso[iλl]                                               # 
+    λ210  = line_data.λ210[iλl]                                              # m
+    ΔE21  = line_data.ΔE21[iλl]                                              # J        
+    E1    = line_data.E1[iλl]                                                # J
+    E2    = line_data.E2[iλl]                                                # J
+    A21   = line_data.A21[iλl]                                               # 1/s
+    B21   = line_data.B21[iλl]                                               # m^3 / (J * s^2)
+    B12   = line_data.B12[iλl]                                               # m^3 / (J * s^2)
+    g2    = line_data.g2[iλl]                                                # 
+    g1    = line_data.g1[iλl]                                                # 
+    S21r  = line_data.S21r[iλl]                                              # m
+    γair  = line_data.γair[iλl]                                              # 1 / (m * Pa)
+    γself = line_data.γself[iλl]                                             # 1 / (m * Pa)
+    nair  = line_data.nair[iλl]                                              # 
+    δair  = line_data.δair[iλl]                                              # 1 / (m * Pa)
 
     if iso > 11
         @warne mid, lid, λ210
@@ -234,7 +234,6 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
     κ2   = S21 * λ210^2                                               # [1]
 
-
     iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ1, κ2
 end
 
@@ -250,10 +249,10 @@ end
 No4
 """
 function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, c, T, N, p)
-    iλ = argmin(line_data.E1)
-    Threads.@threads for iλ in eachindex(line_data.λ210)
-        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, c, T, N, p, iλ)
-        linedata_pTNc_spec[:, iλ] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
+    iλl = argmin(line_data.E1)
+    Threads.@threads for iλl in eachindex(line_data.λ210)
+        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, c, T, N, p, iλl)
+        linedata_pTNc_spec[:, iλl] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
     end
 end
 
@@ -279,11 +278,8 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
     tid = 1
     iλl = 1
 
-
-    κbt = alloc2(prealloc, :κbt, nλb, nbthreads, true)
-    ϵbt = alloc2(prealloc, :ϵbt, nλb, nbthreads, true)
-    κb  = alloc1(prealloc, :κb,  nλb, true)
-    ϵb  = alloc1(prealloc, :ϵb,  nλb, true)
+    κbt = alloc21(prealloc, :κbt, nλb, nbthreads, true)
+    ϵbt = alloc21(prealloc, :ϵbt, nλb, nbthreads, true)
 
     λ21     = linedata_pTNc_spec[3, :]
     index   = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
@@ -315,12 +311,16 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
 
         fb = voigt(λrange, λb[iλb_], ΔλLh[iλl], ΔλGh[iλl], fL_adapt, fG_adapt)
 
-        κbt[iλm_:iλp_, tid] += @. κ[iλl] * fb
-        ϵbt[iλm_:iλp_, tid] += @. ϵ[iλl] * fb
+        κbt[tid][iλm_:iλp_] += @. κ[iλl] * fb
+        ϵbt[tid][iλm_:iλp_] += @. ϵ[iλl] * fb
     end
 
-    κb[:] = sum(κbt,dims=2)
-    ϵb[:] = sum(ϵbt,dims=2)
+    κb  = alloc1(prealloc, :κb,  nλb, true)
+    ϵb  = alloc1(prealloc, :ϵb,  nλb, true)
+    for ith in 1:nbthreads
+        κb[:] += κbt[ith][:]
+        ϵb[:] += ϵbt[ith][:]
+    end
 
     κb, ϵb
 end
@@ -338,14 +338,16 @@ function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κb::Vector{Float64
 
     if omit_absorb_emit == :omit_none
         κbΔs = κb .* Δs
+        exp_κΔs = exp.(-κbΔs)
         Iλb[:] = @. ifelse(κbΔs < κΔs_limit, 
-                        Iλb .* exp.(-κbΔs) .+ ϵb.*Δs, 
-                        Iλb .* exp.(-κbΔs) .+ ϵb./κb.*(1.0 .- exp.(-κbΔs)))
+                        Iλb .* exp_κΔs .+ ϵb.*Δs, 
+                        Iλb .* exp_κΔs .+ ϵb./κb.*(1.0 .- exp_κΔs))
     elseif omit_absorb_emit == :omit_emission
         Iλb[:] = @. Iλb + ϵb*Δs
     else omit_absorb_emit == :emission_absorption
         κbΔs = κb .* Δs
-        Iλb[:] = @. Iλb * exp.(-κbΔs)
+        exp_κΔs = exp.(-κbΔs)
+        Iλb[:] = @. Iλb * exp_κΔs
     end
 end
 

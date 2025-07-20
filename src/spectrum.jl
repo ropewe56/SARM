@@ -168,7 +168,7 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
 
             linedata_pTNc[spec] = Matrix{Float64}(undef, 12, nλl)
 
-            compute_lines_emission_and_absorption!(linedata_pTNc[spec], par, line_data, Qref, Qiso, miso, ciso, T, N, p);
+            compute_lines_emission_and_absorption!(linedata_pTNc[spec], par, line_data, Qref, Qiso, miso, ciso, T, N, p);            
         end
         # >> 2
 

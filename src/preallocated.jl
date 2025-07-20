@@ -51,6 +51,18 @@ end
     A
 end
 
+@inline function a1(A, n1, flag)
+    A = if size(A,1) == n1
+        A
+    else
+        Vector{Float64}(undef, n1) 
+    end
+    if flag
+        fill!(A, 0.0)
+    end
+    A
+end
+
 @inline function alloc2(pre, name, n1, n2, flag=false)
     A = if name == :κbt          
         a2(pre.κbt, n1, n2, flag)
@@ -62,14 +74,25 @@ end
     A
 end
 
-@inline function a1(A, n1, flag)
-    A = if size(A,1) == n1
-        A
-    else
-        Vector{Float64}(undef, n1) 
-    end
-    if flag
-        fill!(A, 0.0)
+@inline function alloc21(pre, name, n1, n2, flag=false)
+    A = if name == :κbt 
+        v = Vector{Vector{Float64}}(undef, n2)
+        for i in 1:n2
+            v[i] = a1(pre.κbt, n1, flag)
+        end
+        v
+    elseif name == :ϵbt          
+        v = Vector{Vector{Float64}}(undef, n2)
+        for i in 1:n2
+            v[i] = a1(pre.ϵbt, n1, flag)
+        end
+        v
+    elseif name == :fbt          
+        v = Vector{Vector{Float64}}(undef, n2)
+        for i in 1:n2
+            v[i] = a1(pre.fbt, n1, flag)
+        end
+        v
     end
     A
 end

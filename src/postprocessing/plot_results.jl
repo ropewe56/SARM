@@ -48,11 +48,10 @@ function get_results(root, ic, iθ)
     end
     @printf("\n")
 
-    h  = df[!,"h"]
-    species = split(df[1,"species"], ",")
-    int_I   = df[!,"int_I"]
-    int_ϵ   = df[!,"int_ϵ"]
-    int_Iκ  = df[!,"int_Iκ"]
+    h      = df[!,"h"]
+    int_I  = df[!,"int_I"]
+    int_ϵ  = df[!,"int_ϵ"]
+    int_Iκ = df[!,"int_Iκ"]
     
     df[!,"hdf5_path"], h, int_I, int_ϵ, int_Iκ
 end
@@ -118,13 +117,17 @@ function plot_result(hdf5_path)
 end
 
 function plot_spectra(hdf5_paths)
+    hdf5_path = hdf5_paths[30]
     for hdf5_path in hdf5_paths
         groups = load_groups_as_hdf5(hdf5_path)
         data = groups["sarm"]
         λ = data["λ"]
         I = data["I"]
-        #ϵ = data["ϵ"]
-        #κ = data["κ"]
+        ϵ = data["ϵ"]
+        κ = data["κ"]
+
+        plt.plot(λ, I.*κ)    
+        plt.plot(λ, ϵ)    
 
         plt.plot(λ, I)    
     end
@@ -147,5 +150,5 @@ function runit()
 
     plot_result(hdf5_path)
 
-     plot_spectra([hdf5_paths[end]])
+    plot_spectra([hdf5_paths[end]])
 end
