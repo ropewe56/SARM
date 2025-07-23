@@ -228,27 +228,12 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
     # ϵ * f(λ) * dz                                                   # [J / (m^2 * sr) / m * m] 
 
     # absorption coefficient [1]
-    κ1 = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)                      # Js * m * s/m / m^3 * m^3/(J*s^2) = 1
-    if abs(1.494836262280377e-5 - λ210) < 1.0e-16
-        @infoe @sprintf("%e, %e, %e, %e, %e, %e", g1, E1, β, Qiso[iso], Niso, iso)
-        @infoe @sprintf("%e, %e, %e, %e, %e, %e", g2, E2, β, Qiso[iso], Niso, iso)
-        @infoe @sprintf("%e, %e, %e", λ21, ϵ, A21)
-        @infoe @sprintf("%e, %e, %e, %e, %e", κ1, B12, B21, N1, N2)
-
-        #[ Info: linedata.jl:233 | 8.100000e+01, 7.907068e-20, 2.514920e+20, 2.763608e+02, 1.095474e+22, 1.000000e+00
-        #[ Info: linedata.jl:234 | 8.100000e+01, 9.235940e-20, 2.514920e+20, 2.763608e+02, 1.095474e+22, 1.000000e+00
-        #[ Info: linedata.jl:235 | 1.494838e-05, 5.483138e-10, 1.976000e+00
-        #[ Info: linedata.jl:236 | 9.372351e-17, 3.963437e+17, 3.963437e+17, 7.419670e+12, 2.624034e+11
-
-        #3371872872507.4526
-        #119249365673.23431
-    end
-    # I * κ * f(λ) * dz                                               # [J/m^2 * 1/m * m]
+    κ = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)                       # Js * m * s/m / m^3 * m^3/(J*s^2) = 1
 
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
-    κ2   = S21 * λ210^2                                               # [1]
+    #κ2   = S21 * λ210^2                                               # [1]
 
-    iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ1, κ2
+    iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ
 end
 
 @doc raw"""
@@ -262,11 +247,11 @@ end
     NCO2 - CO2 concentration
 No4
 """
-function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, aiso, miso, c, T, N, p)
+function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
     iλl = argmin(line_data.E1)
     Threads.@threads for iλl in eachindex(line_data.λ210)
-        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, aiso, miso, c, T, N, p, iλl)
-        linedata_pTNc_spec[:, iλl] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
+        iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+        linedata_pTNc_spec[:, iλl] = [iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ]
     end
 end
 
@@ -295,16 +280,19 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
     κbt = alloc21(prealloc, :κbt, nλb, nbthreads, true)
     ϵbt = alloc21(prealloc, :ϵbt, nλb, nbthreads, true)
 
-    λ21     = linedata_pTNc_spec[3, :]
+    λ21     = linedata_pTNc_spec[6, :]
     index   = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
     ML      = linedata_pTNc_spec[:,index]
     n1, nλl = size(ML)
 
-    λ21  = ML[3,:]
-    ΔλLh = ML[5,:] .* 0.5
-    ΔλGh = ML[6,:] .* 0.5
-    ϵ    = ML[10,:]
-    κ    = ML[11,:]
+    # 1    2          3          4          5    6    7   8    9    10  11  12 13
+    # iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ 
+
+    λ21  = ML[6,:]
+    ΔλLh = ML[8,:] .* 0.5
+    ΔλGh = ML[9,:] .* 0.5
+    ϵ    = ML[12,:]
+    κ    = ML[13,:]
 
     iλb = @. floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
     δiλ = @. floor(Int64, (ΔλLh + ΔλGh) * f_Δλ_factor / dλ)

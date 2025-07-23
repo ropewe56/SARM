@@ -84,7 +84,7 @@ end
 
 function parameter_init(par)
     par[:nλb] = floor(Int64, (par[:λmax] - par[:λmin]) / par[:Δλb])
-    λb  = collect(range(par[:λmin], par[:λmax], par[:nλb]))
+    par[:λb] = make_λb(par)
 
     for spec in keys(par[:c_ppm])
         par[:c_ppm][spec][:] *= PPM 

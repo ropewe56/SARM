@@ -112,16 +112,13 @@ end
     integrate_along_path(par, prealloc, rdb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
 
 """
-function integrate_along_path(par, prealloc, result_db, atmosphere, 
-                    molec_data_dict::Dict{Symbol,MolecularData},  line_data_dict::Dict{Symbol,LineData}, ic, iθ, θ)
+function integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere, 
+                    molec_data_dict::Dict{Symbol,MolecularData}, 
+                    line_data_dict::Dict{Symbol,LineData}, ic, iθ, θ)
     Δλb = par[:Δλb]
     surface_T = par[:surface_T]
     T_of_h = par[:T_of_h ]
     N_of_h = par[:N_of_h ]
-
-    λb  = make_λb(par)
-    Iλb = initial_intensity(par, λb)
-    int_I0 = sum(Iλb) * Δλb
 
     Tmin = par[:surface_T]
     Nmin = 1.0e30
@@ -130,7 +127,7 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
     cputimes = []
     nh = length(atmosphere.h)
 
-    ih = 2
+    ih = 1
     spec = :CO2
 
     for (ih,h) in enumerate(atmosphere.h)
@@ -168,8 +165,9 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
             nλl = length(line_data.λ210)
             ciso = cihic[spec]
 
-            linedata_pTNc[spec] = Matrix{Float64}(undef, 12, nλl)
-
+            linedata_pTNc[spec] = Matrix{Float64}(undef, 13, nλl)
+            # 1    2          3          4          5    6    7   8    9    10  11  12 13
+            # iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ 
             compute_lines_emission_and_absorption!(linedata_pTNc[spec], par, line_data, Qref, Qiso, miso, aiso, ciso, T, N, p);            
         end
         # >> 2
@@ -185,8 +183,8 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
         linedata_pTNc_spec = linedata_pTNc[spec]
         for (spec, cc) in par[:c_ppm]
             κbs[spec], ϵbs[spec] = sum_over_lines(par, λb, linedata_pTNc[spec], prealloc)
-            ΔλLs = linedata_pTNc[spec][3,:]
-            ΔλDs = linedata_pTNc[spec][4,:]
+            ΔλLs = linedata_pTNc[spec][8,:]
+            ΔλDs = linedata_pTNc[spec][9,:]
             ΔλL_mean[spec] = Statistics.mean(ΔλLs)
             ΔλD_mean[spec] = Statistics.mean(ΔλDs)
         end
@@ -212,6 +210,12 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
         for (k, val) in ϵbs
             @. ϵb += val
         end
+        extrema(κbs[:CO2])
+        plt.plot(ϵbs[:CO2])
+
+        elk = @. ifelse(κbs[:CO2] > 0.0, ϵbs[:CO2] ./ κbs[:CO2], 0.0)
+        Ip = planck(220.0, 15.0e-6)
+        plt.plot(elk)
 
         integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par)
         push!(tt, time_ns())
@@ -221,6 +225,9 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
         else
             missing
         end
+        ϵdκ = @. ifelse(κb > 0.0, ϵb ./ κb, 0.0)
+        extrema(ϵb)
+        plt.plot(ϵdκ)
         push!(tt, time_ns())
         # << 4
 
@@ -263,12 +270,12 @@ end
     function integrate(par, atm::Atmosphere, moleculardata::Vector{MolecularData}, linedata::Vector{LineData})
 No1
 """
-function integrate(par, result_db, atmosphere::Atmosphere, molec_data_dict::Dict{Symbol,MolecularData},  
+function integrate(par, result_db, λb, Iλb, atmosphere::Atmosphere, molec_data_dict::Dict{Symbol,MolecularData},  
                         line_data_dict::Dict{Symbol,LineData}, prealloc::Preallocated)
     ic     = 1
     iθ, θ  = 1, 0.0
     for ic in 1:par[:nc], (iθ, θ) in enumerate(par[:θ])
-        @time cputimes = integrate_along_path(par, prealloc, result_db, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
+        @time cputimes = integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
     end
 end
 

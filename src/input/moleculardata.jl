@@ -51,8 +51,9 @@ function get_sorted_q_files(root)
     files = readdir(root)
     ii = []
     ff = []
+    f = files[3]
     for f in files
-        if occursin("q", f)
+        if f[1] == 'q'
             n = split(f, ".")[1][2:end]
             push!(ff, f)
             push!(ii, parse(Int64, n))
@@ -95,12 +96,13 @@ end
     n  -- number of T,Q pairs to make
     returns T, Q -- [description]
 """
-function MolecularData(species, atm, isopath, TQmin, TQmax)
+function MolecularData(species, atmosphere, isopath, TQmin, TQmax)
     iso_id, iso_a, iso_m, gj, qpaths = load_Isotope_file(isopath)        
     niso = min(length(iso_id), length(qpaths))
     Qhiso = []
     Qref = []
     # read the partition function files
+    i = 1
     for i in 1:niso
         fpath = joinpath(dirname(isopath), qpaths[i])        
         T = []
@@ -118,12 +120,12 @@ function MolecularData(species, atm, isopath, TQmin, TQmax)
         T = T[index]
         Q = Q[index]
         lip = linear_interpolation(T, Q, extrapolation_bc = Line())
-        Q = lip.(atm.T)
+        Q = lip.(atmosphere.T)
         push!(Qhiso, Q)
         push!(Qref, lip(TREF))
     end
     Qisoh = reduce(hcat, Qhiso)'
-    cnh = get_normalized_molecule_concentration_over_h(species, atm.h)
+    cnh = get_normalized_molecule_concentration_over_h(species, atmosphere.h)
     
     MolecularData(species, Qref, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
 end
@@ -132,7 +134,8 @@ function get_molecular_data(par, atmosphere)
     datfiles = get_data_files()
     md = Dict{Symbol,MolecularData}()
     for spec in par[:species]
-        md[spec] = MolecularData(spec, atmosphere, datfiles[spec][:Q], par[:TQmin], par[:TQmax])
+        isopath, TQmin, TQmax = datfiles[spec][:Q], par[:TQmin], par[:TQmax]
+        md[spec] = MolecularData(spec, atmosphere, isopath, TQmin, TQmax)
     end
     md
 end

@@ -132,6 +132,32 @@ function plot_spectra(hdf5_paths)
     end
 end
 
+function get_init(root)
+    path_Ii  = joinpath(OUTROOT, root, "intensity", "initial_intensity.hdf5")
+    pli = load_groups_as_hdf5(path_Ii)
+    p = pli["TλI"]
+    λi, Ii = p["λ"], p["I"]
+
+    path_pi  = joinpath(OUTROOT, root, "intensity", "planck_single.hdf5")
+    plp = load_groups_as_hdf5(path_pi)
+    p = plp["TλI"]
+    λp, Ip = p["λ"], p["I"]
+
+    λi, Ii, λp, Ip
+end
+
+function plot_intensity(hdf5_path, λi, Ii, λp, Ip)
+    groups = load_groups_as_hdf5(hdf5_path)
+    data = groups["sarm"]
+    λ = data["λ"]
+    I = data["I"]
+
+    plt.figure()
+    plt.plot(λi,Ii)
+    plt.plot(λp,Ip)
+    plt.plot(λ,I)
+end
+
 function runit()
     root = readdir(OUTROOT)[end]
 
@@ -145,9 +171,10 @@ function runit()
     plt.plot(h,int_ϵ) 
     plt.plot(h,int_Iκ)
 
-    hdf5_path = hdf5_paths[end]
-
-    plot_result(hdf5_path)
+    length(hdf5_paths)
+    hdf5_path = hdf5_paths[2]
+    λi, Ii, λp, Ip = get_init(root);
+    plot_intensity(hdf5_path, λi, Ii, λp, Ip)
 
     plot_spectra([hdf5_paths[end]])
 end
