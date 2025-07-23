@@ -33,3 +33,4 @@ write_atmosphere_to_hdf5(par[:paths], atmosphere);
 prealloc = Preallocated();
 
 integrate(par, result_db, atmosphere, molec_data_dict, line_data_dict, prealloc)
+

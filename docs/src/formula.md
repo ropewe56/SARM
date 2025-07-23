@@ -6,16 +6,22 @@ $λ_{ul} = \dfrac{λ_{ul0}}{1 + λ_{ul0}  \delta_{air}  p}$
 
 ## Line shape
 $\int f(λ) d\lambda = 1$
+
 ### Lorentz line shape
 $f_L(\lambda) = \dfrac{1}{\pi} \dfrac{\Delta \lambda_L^2}{(\lambda - \lambda_{ul})^2 + \Delta \lambda_L^2}$
+
 $Δλ_L = γ λ_{ul}^2$
+
 $γ = \left(\dfrac{T_{ref}}{T}\right)^{n_{air}} \left[γ_a(p_{ref}, T_{ref}) (p - p_{CO2}) + γ_s p_{CO2}(p_{ref}, T_{ref})\right]$
+
 ### Gauss line shape
 $f_G(\lambda) = \sqrt{\dfrac{\ln 2}{\pi \Delta\lambda_G^2}} \exp\left(-\dfrac{\ln 2}{\Delta\lambda_G^2}(\lambda -\lambda_{ul})^2\right)$
+
 $Δλ_G = \dfrac{λ_{ul}}{c} \sqrt{\dfrac{2  k_B  T}{M(iso)}}$
 
 ## Occupation densities
 $N_l  = \dfrac{g_l}{Q(T, iso)} \exp\left(- \dfrac{E_l}{K_B T}\right)  N_{iso}$
+
 $N_u  = \dfrac{g_u}{Q(T, iso)} \exp\left(- \dfrac{E_u}{K_B T}\right)  N_{iso}$
 
 ## Radiation transfer
@@ -45,7 +51,9 @@ $B_{lu} = \dfrac{g_u}{g_l} B_{ul}$
 ## Intensity
 
 $\epsilon(\lambda) = \sum_j \epsilon_j(\lambda)$
+
 $\kappa(\lambda) = \sum_j \kappa_j(\lambda)$
+
 $I(\lambda,s) = I(\lambda,s_0) \exp \left(- \kappa(\lambda) (s-s_0)\right) + \dfrac{\epsilon(\lambda)}{\kappa(\lambda)} \left(1 - \exp\left(-\kappa(\lambda) (s-s_0)\right)\right)$
 
 
@@ -62,25 +70,3 @@ $\epsilon_{line} =  \dfrac{1}{4 \pi} h ν A_{ki} N_k  \left[\dfrac{J}{s m^3}\rig
    * density
    * pressure
    * CO2 concentration
-
-
-# Temperatur Increase
-
-$σ = 5.670374419 \; 10^{-8} \dfrac{W}{ m^2  K^4}$
-
-
-$F_0 = \dfrac{1367.0}{4} \dfrac{W}{m^2} = 341.75 \dfrac{W}{m^2}$
-
-$F_0 = σ T^4$
-
-$T = \left(\dfrac{F_0}{σ}\right)^{1/4}$
-
-$F = \sigma T^4 \left(1 + 4 \dfrac{\Delta T}{T}\right)$
-
-$F = F_0 \left(1 + 4 \dfrac{\Delta T}{T}\right)$
-
-$\Delta T = \dfrac{\Delta F}{F_0} \dfrac{T}{4}$
-
-$\Delta F = 6 \dfrac{W}{m^2}$
-
-$\Delta T = 1.22 K$

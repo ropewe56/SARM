@@ -12,13 +12,13 @@ function data_files()
     DATADIR = data_root()
     d = Dict(:H2O => Dict(
                         :Q            => joinpath(DATADIR, "H2O", "H2O_Q", "H2O_Isotopes.txt"),
-                        :out          => joinpath(DATADIR, "H2O", "H2O_rwfmt.out"),
+                        :out          => joinpath(DATADIR, "H2O", "H2O_rwfmt.csv"),
                         :hdf5         => joinpath(DATADIR, "H2O", "H2O_rwfmt.hdf5"),
                         :hdf5_compact => joinpath(DATADIR, "H2O", "H2O_rwfmt_compact.hdf5")
                 ),
              :CO2 => Dict(
                         :Q            => joinpath(DATADIR, "CO2", "CO2_Q", "CO2_Isotopes.txt"),
-                        :out          => joinpath(DATADIR, "CO2", "CO2_rwfmt.out"),
+                        :out          => joinpath(DATADIR, "CO2", "CO2_rwfmt.csv"),
                         :hdf5         => joinpath(DATADIR, "CO2", "CO2_rwfmt.hdf5"),
                         :hdf5_compact => joinpath(DATADIR, "CO2", "CO2_rwfmt_compact.hdf5")
                 ),

@@ -158,8 +158,10 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
         for (spec, cc) in par[:c_ppm]
             md   = molec_data_dict[spec]
             miso = md.iso_m       # Vector
+            aiso = md.iso_a       # Vector
             Qiso = md.Qisoh[:,ih] # Vector 
             Qref = md.Qref # Vector 
+
             cihic[spec] = md.cnh[ih] * cc[ic]
 
             line_data = line_data_dict[spec]
@@ -168,7 +170,7 @@ function integrate_along_path(par, prealloc, result_db, atmosphere,
 
             linedata_pTNc[spec] = Matrix{Float64}(undef, 12, nλl)
 
-            compute_lines_emission_and_absorption!(linedata_pTNc[spec], par, line_data, Qref, Qiso, miso, ciso, T, N, p);            
+            compute_lines_emission_and_absorption!(linedata_pTNc[spec], par, line_data, Qref, Qiso, miso, aiso, ciso, T, N, p);            
         end
         # >> 2
 

@@ -117,7 +117,6 @@ function plot_result(hdf5_path)
 end
 
 function plot_spectra(hdf5_paths)
-    hdf5_path = hdf5_paths[30]
     for hdf5_path in hdf5_paths
         groups = load_groups_as_hdf5(hdf5_path)
         data = groups["sarm"]
@@ -146,7 +145,7 @@ function runit()
     plt.plot(h,int_ϵ) 
     plt.plot(h,int_Iκ)
 
-    hdf5_path = hdf5_paths[1]
+    hdf5_path = hdf5_paths[end]
 
     plot_result(hdf5_path)
 

@@ -180,7 +180,7 @@ end
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, ciso, T, N, p, iλl)
+function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
@@ -205,7 +205,7 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
         @warne mid, lid, λ210
     end
 
-    Niso = ciso * N                                                         #  [1/m^3]
+    Niso = ciso * N  * aiso[iso]                                            #  [1/m^3]
 
     # pressure shift
     λ21 = λ210 / (1.0 + δair * λ210 * p)
@@ -229,6 +229,20 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
 
     # absorption coefficient [1]
     κ1 = c_h * λ21 / c_c * (N1 * B12 - N2 * B21)                      # Js * m * s/m / m^3 * m^3/(J*s^2) = 1
+    if abs(1.494836262280377e-5 - λ210) < 1.0e-16
+        @infoe @sprintf("%e, %e, %e, %e, %e, %e", g1, E1, β, Qiso[iso], Niso, iso)
+        @infoe @sprintf("%e, %e, %e, %e, %e, %e", g2, E2, β, Qiso[iso], Niso, iso)
+        @infoe @sprintf("%e, %e, %e", λ21, ϵ, A21)
+        @infoe @sprintf("%e, %e, %e, %e, %e", κ1, B12, B21, N1, N2)
+
+        #[ Info: linedata.jl:233 | 8.100000e+01, 7.907068e-20, 2.514920e+20, 2.763608e+02, 1.095474e+22, 1.000000e+00
+        #[ Info: linedata.jl:234 | 8.100000e+01, 9.235940e-20, 2.514920e+20, 2.763608e+02, 1.095474e+22, 1.000000e+00
+        #[ Info: linedata.jl:235 | 1.494838e-05, 5.483138e-10, 1.976000e+00
+        #[ Info: linedata.jl:236 | 9.372351e-17, 3.963437e+17, 3.963437e+17, 7.419670e+12, 2.624034e+11
+
+        #3371872872507.4526
+        #119249365673.23431
+    end
     # I * κ * f(λ) * dz                                               # [J/m^2 * 1/m * m]
 
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
@@ -248,10 +262,10 @@ end
     NCO2 - CO2 concentration
 No4
 """
-function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, c, T, N, p)
+function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, aiso, miso, c, T, N, p)
     iλl = argmin(line_data.E1)
     Threads.@threads for iλl in eachindex(line_data.λ210)
-        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, c, T, N, p, iλl)
+        iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2 = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, aiso, miso, c, T, N, p, iλl)
         linedata_pTNc_spec[:, iλl] = [iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, mass, ϵ, κ1, κ2]
     end
 end
