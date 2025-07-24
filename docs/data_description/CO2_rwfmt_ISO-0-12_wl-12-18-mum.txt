@@ -1,0 +1,76 @@
+rwfmt
+-----
+
+The fields output for this profile are listed in order below with format strings, units and description the following information: :
+
+molec_id
+--------
+Data type: int
+Units: [dimensionless]
+Description: The HITRAN integer ID for this molecule in all its isotopologue forms
+
+local_iso_id
+------------
+Data type: int
+Units: [dimensionless]
+Description: Integer ID of a particular Isotopologue, unique only to a given molecule, in order or abundance (1 = most abundant)
+
+nu
+--
+Data type: float
+Units: cm-1
+Description: Transition wavenumber
+
+sw
+--
+Data type: float
+Units: cm-1/(molec.cm-2)
+Description: Line intensity, multiplied by isotopologue abundance, at T = 296 K
+
+a
+-
+Data type: float
+Units: s-1
+Description: Einstein A-coefficient in s-1
+
+gamma_air
+---------
+Data type: float
+Units: cm-1.atm-1
+Description: Air-broadened Lorentzian half-width at half-maximum at p = 1 atm and T = 296 K
+
+gamma_self
+----------
+Data type: float
+Units: cm-1.atm-1
+Description: Self-broadened HWHM at 1 atm pressure and 296 K
+
+elower
+------
+Data type: float
+Units: cm-1
+Description: Lower-state energy
+
+n_air
+-----
+Data type: float
+Units: [dimensionless]
+Description: Temperature exponent for the air-broadened HWHM
+
+delta_air
+---------
+Data type: float
+Units: cm-1.atm-1
+Description: Pressure shift induced by air, referred to p=1 atm
+
+gp
+--
+Data type: int
+Units: [dimensionless]
+Description: Upper state degeneracy
+
+gpp
+---
+Data type: int
+Units: [dimensionless]
+Description: Lower state degeneracy

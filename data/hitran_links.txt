@@ -1,0 +1,4 @@
+https://hitran.org/docs/molec-meta/
+https://hitran.org/docs/iso-meta/
+https://hitran.org/docs/definitions-and-units/
+https://hitran.org/docs/cross-sections-definitions/
