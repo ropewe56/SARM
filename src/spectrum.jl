@@ -151,7 +151,7 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere,
         push!(tt, time_ns())
         cihic = Dict{Symbol, Float64}()
         linedata_pTNc = Dict{Symbol,Matrix{Float64}}()
-        cc = par[:c_ppm][:CO2]
+        #cc = par[:c_ppm][:CO2]
         for (spec, cc) in par[:c_ppm]
             md   = molec_data_dict[spec]
             miso = md.iso_m       # Vector
@@ -178,9 +178,9 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere,
         ϵbs      = Dict{Symbol, Vector{Float64}}()
         ΔλL_mean = Dict{Symbol, Float64}()
         ΔλD_mean = Dict{Symbol, Float64}()
-        spec = :CO2
-        cc = par[:c_ppm][spec]
-        linedata_pTNc_spec = linedata_pTNc[spec]
+        #spec = :CO2
+        #cc = par[:c_ppm][spec]
+        #linedata_pTNc_spec = linedata_pTNc[spec]
         for (spec, cc) in par[:c_ppm]
             κbs[spec], ϵbs[spec] = sum_over_lines(par, λb, linedata_pTNc[spec], prealloc)
             ΔλLs = linedata_pTNc[spec][8,:]
@@ -210,12 +210,6 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere,
         for (k, val) in ϵbs
             @. ϵb += val
         end
-        extrema(κbs[:CO2])
-        plt.plot(ϵbs[:CO2])
-
-        elk = @. ifelse(κbs[:CO2] > 0.0, ϵbs[:CO2] ./ κbs[:CO2], 0.0)
-        Ip = planck(220.0, 15.0e-6)
-        plt.plot(elk)
 
         integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par)
         push!(tt, time_ns())
@@ -225,9 +219,6 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere,
         else
             missing
         end
-        ϵdκ = @. ifelse(κb > 0.0, ϵb ./ κb, 0.0)
-        extrema(ϵb)
-        plt.plot(ϵdκ)
         push!(tt, time_ns())
         # << 4
 

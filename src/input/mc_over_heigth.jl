@@ -11,10 +11,11 @@ function H2O_normalized_concentration_over_h(hi)
 
     index = sortperm(h)
     h2    = h[index]
-    cl = c_log10[index]
-    itp = linear_interpolation(h2, cl, extrapolation_bc = Line())
+    cl    = c_log10[index]
+    
+    itp   = linear_interpolation(h2, cl, extrapolation_bc = Line())
 
-    cli = itp(atm.h)
+    cli = itp(hi)
     ci = 10.0.^cli
     ci = ci ./ maximum(ci)
     ci

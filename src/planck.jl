@@ -15,11 +15,11 @@ I = \dfrac{2 π  h  c^2}{λ^5} \dfrac{1}{\exp\left(\dfrac{h  c}{k_B T λ} - 1 \r
 ```
 """
 @inline function planck(T::Float64, λ::Float64)
-    2π * hc * c_c / λ^5 / (exp(hc / (λ * c_kB * T)) - 1.0)
+    2.0 * hc * c_c / λ^5 / (exp(hc / (λ * c_kB * T)) - 1.0)
 end
 
 @inline function planck_λ(T::Float64, λ::Vector{Float64})
-    @. 2π * hc * c_c / λ^5 / (exp(hc / (λ * c_kB * T)) - 1.0)
+    @. 2.0 * hc * c_c / λ^5 / (exp(hc / (λ * c_kB * T)) - 1.0)
 end
 
 function compute_planck(T::Union{Float64,Vector{Float64}}, λ::Vector{Float64})

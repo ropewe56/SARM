@@ -18,28 +18,29 @@ function list_to_string(lst)
     String(take!(io))
 end
 
-function ResultDB(dbpath, csih)
+function ResultDB(par)
+    dbpath = par[:paths][:dbpath]
+
     if isfile(dbpath)
         @warne "database", dbpath, "exists"
+        run(`rm $dbpath`)
     end
+    db = SQLite.DB(dbpath)
 
     colnames = ["hdf5_path", "ic", "iθ", "ih", "h", "θ",  "T",  "N", "int_I", "int_ϵ", "int_Iκ", "species"]
     coltypes = [String, Int,  Int,   Int, Real, Real, Real,  Real, Real, Real, Real,  Real, String]
     
-    species = collect(keys(csih))
+    species = par[:species]
     for spec in species
         colnames = cat(colnames, ["cih$spec", "ΔλL$spec", "ΔλD$spec", "int_ϵs$spec", "int_Iκs$spec", "mean_κs$spec"], dims=1)
         coltypes = cat(coltypes, [Real, Real, Real, Real, Real, Real], dims=1)
     end
-    
-    #length(colnames)
-    #length(coltypes)
 
-    db = SQLite.DB(dbpath)
     SQLite.createtable!(db, "results", Tables.Schema(colnames, coltypes))
 
     columns = SQLite.columns(db, "results")
-    #length(columns.name)
+
+    @assert(length(colnames) == length(columns.name))
 
     io = IOBuffer()
     write(io, @sprintf("%s", columns.name[1]))
@@ -53,11 +54,6 @@ function ResultDB(dbpath, csih)
     ResultDB(dbpath, db, cln, rowqm, species)
 end
 
-function create_result_db(par)
-    rdb = ResultDB(par[:paths][:dbpath], par[:c_ppm])
-    rdb
-end
-
 function open_db(dbpath)
     SQLite.DB(dbpath)
 end
@@ -68,6 +64,7 @@ function insert_into_resultdb(result_db::ResultDB, hdf5_path::String, ic::Int64,
     species = collect(keys(cihic))
     row = Array{Any}([hdf5_path, ic, iθ, ih, h, θ, T, N, int_I[1], int_ϵ[1], int_Iκ[1], list_to_string(result_db.species)])
     for spec in result_db.species
+        @infoe [cihic[spec], ΔλL_mean[spec], ΔλD_mean[spec], int_ϵs[spec][1], int_Iκs[spec][1], mean_κs[spec][1]]
         row = cat(row, [cihic[spec], ΔλL_mean[spec], ΔλD_mean[spec], int_ϵs[spec][1], int_Iκs[spec][1], mean_κs[spec][1]], dims=1)
     end
 

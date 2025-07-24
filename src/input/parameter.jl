@@ -3,7 +3,7 @@ using JSON3
 using Dates
 using Printf
 
-function make_subdir()
+function new_subdir_path()
     d = Dates.now()
     @sprintf("%s", d)
 end
@@ -84,11 +84,12 @@ end
 
 function parameter_init(par)
     par[:nλb] = floor(Int64, (par[:λmax] - par[:λmin]) / par[:Δλb])
-    par[:λb] = make_λb(par)
 
-    for spec in keys(par[:c_ppm])
-        par[:c_ppm][spec][:] *= PPM 
+    par[:c_ppm] = Dict()
+    for species in par[:species]
+        par[:c_ppm][species] = par[:concentrations][species] *= PPM 
     end
+
     cch0 = [par[:c_ppm][k][1] for k in keys(par[:c_ppm])]
     par[:nc] = maximum([length(par[:c_ppm][k]) for k in keys(par[:c_ppm])])
 

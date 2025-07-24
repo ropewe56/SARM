@@ -70,3 +70,24 @@ $\epsilon_{line} =  \dfrac{1}{4 \pi} h ν A_{ki} N_k  \left[\dfrac{J}{s m^3}\rig
    * density
    * pressure
    * CO2 concentration
+
+
+$N_2 = g_2 \dfrac{\exp(- E_2 β)}{Q} N$
+
+$N_1 = g_1 \dfrac{\exp(- E_1 β)}{Q} N$
+
+$ϵ = \dfrac{h c}{λ_{21}} N_2 A_{21} \dfrac{dΩ}{4 π}$
+
+$κ = \dfrac{h  λ_{21}}{c} (N_1 B_{12} - N_2 B_{21})$
+
+$B_{21} = \dfrac{A_{21} λ_{21}^3}{8π  h}$
+
+$B_{12} = \dfrac{g_2}{g_1} B_{21}$
+
+$ϵ = \dfrac{h c}{λ_{21}} g_2 \dfrac{\exp(- E_2 β)}{Q} N A_{21} \dfrac{dΩ}{4 π}$
+
+$κ = \dfrac{h  λ_{21}}{c} \left(g_1 \dfrac{\exp(- E_1 β)}{Q} N \dfrac{g_2}{g_1} - g_2 \dfrac{\exp(- E_2 β)}{Q} N \right) \dfrac{A_{21} λ_{21}^3}{8π  h}$
+
+$\dfrac{ϵ}{\kappa} = \dfrac{2 h c^2}{λ_{21}^5} \dfrac{1}{\exp(h \nu β) -1} \dfrac{dΩ}{π}$
+
+$P(λ) = \dfrac{2 h c^2}{λ^5} \dfrac{1}{\exp(hν β) - 1}$

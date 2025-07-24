@@ -75,6 +75,7 @@ function load_hitran_data(hitran_out, λmin, λmax, iso_max)
 
     # Einstein coefficient of induced emission
     B21 = @. A21 * λ210^3 / (8π * c_h)                               # [m^3 / s / Js] = [m^3 / J / s^2]
+    #B21 = @. A21 * λ210^3 / (2.0 * c_h)                               # [m^3 / s / Js] = [m^3 / J / s^2]
     # Einstein coefficient of absorption
     B12 = @. g2 / g1 * B21;
 
@@ -101,6 +102,8 @@ function hitran_to_hdf5(species, hitran_out, hdf5, hdf5c, λmin, λmax, iso_max)
         ("nair"    , nair  ),
         ("δair"    , δair  )
     ]
+
+    @infoe hdf5, string(species)
 
     save_arrays_to_hdf5(hdf5, string(species), datasets)
 
@@ -373,16 +376,23 @@ function add_background()
 #        end
 end
 
-function get_line_data(par, moleculardata; renew_hdf5=false)
+"""
+species = :H2O
+moleculardata = molec_data_dict[species]
+"""
+function get_species_line_data(par, species, moleculardata; renew_hdf5=false)
     datfiles = get_data_files()
     if renew_hdf5
-        for spec in par[:species]
-            hitran_to_hdf5(spec, datfiles[spec][out], datfiles[spc][:hdf5], datfiles[spec][:hdf5_compact], par[:λmin], par[:λmax], length(moleculardata[:spec].iso_a))
-        end
+        hitran_to_hdf5(species, datfiles[species][:csv], datfiles[species][:hdf5], datfiles[species][:hdf5_compact], par[:λmin], par[:λmax], length(moleculardata.iso_a))
     end
-    line_data = Dict{Symbol,LineData}()
-    for spec in par[:species]
-        line_data[spec] = LineData(datfiles[spec][:hdf5_compact]);
-    end
+    line_data = LineData(datfiles[species][:hdf5_compact]);
     line_data
+end
+
+function get_line_data(par, molec_data_dict; renew_hdf5=false)
+    line_data_dict = Dict{Symbol,LineData}()
+    for species in par[:species]
+        line_data_dict[species] = get_species_line_data(par, species, molec_data_dict[species]; renew_hdf5=renew_hdf5)
+    end
+    line_data_dict
 end
