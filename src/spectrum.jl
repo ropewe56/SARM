@@ -112,9 +112,12 @@ end
     integrate_along_path(par, prealloc, rdb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
 
 """
-function integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere, 
+function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere, 
                     molec_data_dict::Dict{Symbol,MolecularData}, 
                     line_data_dict::Dict{Symbol,LineData}, ic, iθ, θ)
+
+    Iλb = copy(Iλb0)
+
     Δλb = par[:Δλb]
     surface_T = par[:surface_T]
     T_of_h = par[:T_of_h ]
@@ -217,7 +220,7 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere,
         hdf5_path = if atmosphere.h_iout[ih] == 1
             write_results_to_hdf5(par[:paths], atmosphere, ic, iθ, ih, linedata_pTNc, λb, Iλb, κb, ϵb, κbs, ϵbs)
         else
-            missing
+            "none"
         end
         push!(tt, time_ns())
         # << 4
@@ -266,7 +269,7 @@ function integrate(par, result_db, λb, Iλb, atmosphere::Atmosphere, molec_data
     ic     = 1
     iθ, θ  = 1, 0.0
     for ic in 1:par[:nc], (iθ, θ) in enumerate(par[:θ])
-        @time cputimes = integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
+        @time integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
     end
 end
 

@@ -27,8 +27,8 @@ function ResultDB(par)
     end
     db = SQLite.DB(dbpath)
 
-    colnames = ["hdf5_path", "ic", "iθ", "ih", "h", "θ",  "T",  "N", "int_I", "int_ϵ", "int_Iκ", "species"]
-    coltypes = [String, Int,  Int,   Int, Real, Real, Real,  Real, Real, Real, Real,  Real, String]
+    colnames = ["hdf5_path", "ic", "iθ", "ih", "h", "θ",  "T",  "N", "cCO2", "int_I", "int_ϵ", "int_Iκ", "species"]
+    coltypes = [String, Int,  Int,   Int, Real, Real, Real,  Real, Real, Real, Real, Real,  Real, String]
     
     species = par[:species]
     for spec in species
@@ -62,9 +62,15 @@ function insert_into_resultdb(result_db::ResultDB, hdf5_path::String, ic::Int64,
                                 h::Float64, θ::Float64, T::Float64, N::Float64, cihic, ΔλL_mean, ΔλD_mean, 
                                 int_I, int_ϵ, int_Iκ, int_ϵs, mean_κs, int_Iκs)
     species = collect(keys(cihic))
-    row = Array{Any}([hdf5_path, ic, iθ, ih, h, θ, T, N, int_I[1], int_ϵ[1], int_Iκ[1], list_to_string(result_db.species)])
+    cCO2 = if haskey(cihic, :CO2)
+        cihic[:CO2]
+    else
+        cihic[species[1]]
+    end
+
+    row = Array{Any}([hdf5_path, ic, iθ, ih, h, θ, T, N, cCO2, int_I[1], int_ϵ[1], int_Iκ[1], list_to_string(result_db.species)])
     for spec in result_db.species
-        @infoe [cihic[spec], ΔλL_mean[spec], ΔλD_mean[spec], int_ϵs[spec][1], int_Iκs[spec][1], mean_κs[spec][1]]
+        #@infoe [cihic[spec], ΔλL_mean[spec], ΔλD_mean[spec], int_ϵs[spec][1], int_Iκs[spec][1], mean_κs[spec][1]]
         row = cat(row, [cihic[spec], ΔλL_mean[spec], ΔλD_mean[spec], int_ϵs[spec][1], int_Iκs[spec][1], mean_κs[spec][1]], dims=1)
     end
 

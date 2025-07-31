@@ -173,16 +173,13 @@ function runit()
     plt.plot(h,int_ϵ) 
     plt.plot(h,int_Iκ)
 
-    root = readdir(OUTROOT)[end-1]
+    root = readdir(OUTROOT)[end]
 
     hdf5_paths, h, int_I, int_ϵ, int_Iκ = get_results(root, 1, 1); 
-    int_I
-
+    plt.plot(h, int_I)
     hdf5_paths, h, int_I, int_ϵ, int_Iκ = get_results(root, 2, 1);
-    int_I
+    plt.plot(h, int_I)
 
-    hdf5_paths, h, int_I, int_ϵ, int_Iκ = get_results(root, 3, 1);
-    int_I
 
     hdf5_path = hdf5_paths[end]
     λi, Ii, λp, Ip, λm, Im = get_init(root);

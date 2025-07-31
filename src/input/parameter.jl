@@ -46,8 +46,8 @@ end
 function get_parameter()
     Dict{Symbol, Any}(
         :κΔs_limit           => 0.01,
-        :λmin                => 14.0e-6,
-        :λmax                => 16.0e-6,
+        :λmin                => 12.0e-6,
+        :λmax                => 18.0e-6,
         :nλb                 => 1000000,
         :Δλb                 => 1.0e-11,
         :ΔλL                 => 1.0e-11,
@@ -71,6 +71,7 @@ function get_parameter()
         :c_ppm               => Dict(:a => [1.0,10.0]),
         :nc                  => 1,
         :hmethod             => :equalnumber,
+        :hpath               => "",
         :nh                  => 500,
         :hmin                => 0.0,
         :hmax                => 70000.0,

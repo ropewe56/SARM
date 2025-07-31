@@ -11,7 +11,7 @@ plt.pygui(true)
     Planck intensity at temperature temp and wavelength λ
 
 ```math
-I = \dfrac{2 π  h  c^2}{λ^5} \dfrac{1}{\exp\left(\dfrac{h  c}{k_B T λ} - 1 \right)}
+I = \dfrac{2 h  c^2}{λ^5} \dfrac{1}{\exp\left(\dfrac{h  c}{k_B T λ} - 1 \right)}
 ```
 """
 @inline function planck(T::Float64, λ::Float64)

@@ -83,6 +83,11 @@ function make_h_log10(par)
     h
 end
 
+function make_h_read(par)
+    h = load_array_from_hdf5(par[:hpath])
+    h["z"]
+end
+
 """
     get_hTpN(nh)
 
@@ -119,6 +124,8 @@ function Atmosphere(par)
 
     h = if par[:e] == :e
         make_h_e(par)
+    elseif par[:hmethod] == :read || par[:hmethod] == :read_iz
+        make_h_read(par)
     elseif par[:hmethod] == :exp
         make_h_exp(par)
     elseif par[:hmethod] == :log10
@@ -149,12 +156,18 @@ function Atmosphere(par)
         Nii = @. (1.0 - fff) * Ni[1] + fff * Ni[end]
         hii = reverse(ip.(Nii))
         # << interpolate N, h
-
     end
+
     p = ip_hp.(h)
     T = ip_hT.(h)
     N = @. p / (c_kB * T)
-    h_iout = ones(Int64, length(h))
+
+    h_iout = if par[:hmethod] == :read_iz
+        z_iout = load_array_from_hdf5(par[:h_iout_iz])
+        z_iout["z_iout"]
+    else
+        ones(Int64, length(h))
+    end
     Atmosphere(h_iout, h, p, T, N)
 end
 

@@ -33,6 +33,11 @@ function load_hitran_data(hitran_out, λmin, λmax, iso_max)
     # molec_id, local_iso_id, nu, sw, a, gamma_air, gamma_self, elower, n_air, delta_air, gp, gpp
     df0 = CSV.read(hitran_out, DataFrame)
 
+    nu_m = df0[!,:nu] ./ _cm
+    λ  = 1.0 ./ nu_m
+    λ1,λ2 = extrema(λ)
+    @infoe @sprintf("λ1 = %8.2e, λ2 = %8.2e, λmin = %8.2e, λmax = %8.2e", λ1, λ2, λmin, λmax)
+
     νmax = _cm/λmin
     νmin = _cm/λmax
     ids(x) = @. ( (x >= νmin) && (x < νmax) )
