@@ -3,6 +3,7 @@ using SimpleLog
 using Printf
 using Interpolations
 using DataFrames
+using SpecialFileIO
 using CSV
 using JSON3
 
@@ -138,4 +139,63 @@ function get_molecular_data(par, atmosphere)
         md[spec] = MolecularData(spec, atmosphere, isopath, TQmin, TQmax)
     end
     md
+end
+
+function save_input_to_hdf5(hdf5_path, atmosphere::Atmosphere, molec_data_dict::Dict{Symbol, MolecularData})
+    #h_iout:: Vector{Int64}
+    #h     :: Vector{Float64}
+    #p     :: Vector{Float64}
+    #T     :: Vector{Float64}
+    #N     :: Vector{Float64}
+
+    #species  :: Symbol
+    #Qref     :: Vector{Float64} # at TREF
+    #Qisoh    :: Matrix{Float64}
+    #cnh      :: Vector{Float64}
+    #iso_id   :: Vector{Int64}
+    #iso_a    :: Vector{Float64}
+    #iso_m    :: Vector{Float64}
+    #gj       :: Vector{Int64}
+
+    datasets = Dict()
+
+    datasets["atmosphere"] = (("h_iout", atmosphere.h_iout), 
+                              ("h"     , atmosphere.h), 
+                              ("p"     , atmosphere.p), 
+                              ("T"     , atmosphere.T), 
+                              ("N"     , atmosphere.N))
+
+    for (spec, md) in molec_data_dict
+        datasets[String(spec)] = (
+            ("Qref"  , md.Qref), 
+            ("Qisoh" , md.Qisoh), 
+            ("cnh"   , md.cnh), 
+            ("iso_id", md.iso_id), 
+            ("iso_a" , md.iso_a), 
+            ("iso_m" , md.iso_m), 
+            ("gj"    , md.gj))
+    end
+
+    save_arrays_to_hdf5(hdf5_path, datasets; fmod="w")
+end
+
+function load_input_from_hdf5(hdf5_path)
+    groups = load_groups_as_hdf5(hdf5_path)
+    atm = groups["atmosphere"]
+    atmosphere = Atmosphere(atm["h_iout"], atm["h"], atm["p"], atm["T"], atm["N"])
+
+    species = filter(x -> x != "atmosphere", collect(keys(groups)))
+    molec_data = Dict()
+    for spec in species
+        md = groups[spec] 
+        molec_data[Symbol(spec)] = MolecularData(Symbol(spec), 
+            md["Qref"],
+            md["Qisoh"],
+            md["cnh"],
+            md["iso_id"],
+            md["iso_a"],
+            md["iso_m"],
+            md["gj"])
+    end
+    atmosphere, molec_data
 end

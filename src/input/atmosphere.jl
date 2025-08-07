@@ -84,7 +84,7 @@ function make_h_log10(par)
 end
 
 function make_h_read(par)
-    h = load_array_from_hdf5(par[:hpath])
+    h = load_array_from_hdf5(par[:paths][:hpath])
     h["z"]
 end
 
@@ -148,7 +148,7 @@ function Atmosphere(par)
         # << number of particles within a bin
 
         # >> interpolate N, h
-        Ni, hi, ip = lininterp(reverse(N3), reverse(h3), np) # knot vectors must be uinique and increasing
+        Ni, hi, ip = lininterp(reverse(N3), reverse(h3), np) # knot vectors must be unique and increasing
         # equidistant number of particles within a bin
         x1, x2 = 0.05, 3.0
         ff = collect(range(x1, 1.0, par[:nh])).^x2
@@ -163,11 +163,11 @@ function Atmosphere(par)
     N = @. p / (c_kB * T)
 
     h_iout = if par[:hmethod] == :read_iz
-        z_iout = load_array_from_hdf5(par[:h_iout_iz])
-        z_iout["z_iout"]
+        load_array_from_hdf5(par[:h_iout])
     else
         ones(Int64, length(h))
     end
+
     Atmosphere(h_iout, h, p, T, N)
 end
 

@@ -2,6 +2,7 @@ using Parameters
 using JSON3
 using Dates
 using Printf
+using OrderedCollections
 
 function new_subdir_path()
     d = Dates.now()
@@ -30,7 +31,13 @@ function make_outpaths(subdir)
     mkpath(spectrum)
     mkpath(atm)
 
-    Dict(
+    hpath  = "/home/wester/Projects/Julia/Climate-Energy/Sarm.rs/data/z.hdf5"
+    h_iout = "/home/wester/Projects/Julia/Climate-Energy/Sarm.rs/data/z_iout.hdf5"
+    molecdata_path = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results/2025-07-31T16:31:15.003/input_data.hdf5"
+    linedata_path  = Dict( "CO2" => "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/CO2/CO2_rwfmt.hdf5", 
+                            "H2O" => "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/H2O/H2O_rwfmt.hdf5")
+
+    OrderedDict(
         :outroot           => root,
         :intensity         => intensity,
         :spectrum          => spectrum,
@@ -39,59 +46,58 @@ function make_outpaths(subdir)
         :dbpath            => joinpath(root, "db.sqlite3"),
         :planck_single     => joinpath(intensity, "planck_single.hdf5"),
         :planck_multi      => joinpath(intensity, "planck_multi.hdf5"),
-        :initial_intensity => joinpath(intensity, "initial_intensity.hdf5")
+        :initial_intensity => joinpath(intensity, "initial_intensity.hdf5"),
+        :input_data        => joinpath(root, "input_data.hdf5"),
+        :hpath             => hpath,
+        :h_iout            => h_iout,
+        :molecdata_path    => molecdata_path,
+        :linedata_path     => linedata_path
     )
 end
 
 function get_parameter()
-    Dict{Symbol, Any}(
-        :κΔs_limit           => 0.01,
+    OrderedDict{Symbol, Any}(
         :λmin                => 12.0e-6,
         :λmax                => 18.0e-6,
-        :nλb                 => 1000000,
+        :κΔs_limit           => 0.01,
         :Δλb                 => 1.0e-11,
-        :ΔλL                 => 1.0e-11,
-        :λb                  => zeros(Float64, 0),
         :f_Δλ_factor         => 10.0,
-        :fL_adapt            => [:none, :scale, :tail, :scaletail][4],
-        :fG_adapt            => [:none, :scale, :tail, :scaletail][1],
-        :surface_T           => 288.0,
-        :planck_Ts           => [288.0],
-        :initial_intensity   => :planck,
         :TQmin               => 200.0,
         :TQmax               => 300.0,
-        :albedo              => 0.3,
+        :surface_T           => 288.0,
         :background          => 1.0,
-        :T_of_h              => true,
-        :N_of_h              => true,
-        :omit_absorb_emit    => [:omit_none, :omit_emission, :omit_absorption][1],
-        :integrate           => true,
-        :θ                   => [0.0],
-        :species             => [:H2O, :CO2],
-        :c_ppm               => Dict(:a => [1.0,10.0]),
-        :nc                  => 1,
-        :hmethod             => :equalnumber,
-        :hpath               => "",
-        :nh                  => 500,
+        :albedo              => 0.3,
         :hmin                => 0.0,
         :hmax                => 70000.0,
         :dhmin               => 10.0,
         :dhmax               => 500.0,
         :e                   => 2.0,
-        :outdir              => "results",
-        :paths               => Dict()
+        
+        :nλb                 => 1000000,
+        :nh                  => 500,
+        :nc                  => 2,
+
+        :T_of_h              => true,
+        :N_of_h              => true,
+        :integrate           => true,
+
+        :planck_Ts           => [288.0],
+        :θ                   => [0.0],
+
+        :species             => [:H2O, :CO2],
+        :c_ppm               => Dict(:CO2 => [1.0,10.0], :H2O => [1.0,10.0]),
+
+        :omit_absorb_emit    => [:omit_none, :omit_emission, :omit_absorption][1],
+        :initial_intensity   => :planck,
+        :hmethod             => :equalnumber,
+        :fL_adapt            => [0, 1, 2, 3][4], # [:none, :scale, :tail, :scaletail][4],
+        :fG_adapt            => [0, 1, 2, 3][1], # [:none, :scale, :tail, :scaletail][1],
     )
 end
 
 function parameter_init(par)
     par[:nλb] = floor(Int64, (par[:λmax] - par[:λmin]) / par[:Δλb])
 
-    par[:c_ppm] = Dict()
-    for species in par[:species]
-        par[:c_ppm][species] = par[:concentrations][species] *= PPM 
-    end
-
-    cch0 = [par[:c_ppm][k][1] for k in keys(par[:c_ppm])]
     par[:nc] = maximum([length(par[:c_ppm][k]) for k in keys(par[:c_ppm])])
 
     to_json(joinpath(par[:paths][:outroot], "parameter.json"), par)
@@ -121,8 +127,6 @@ function from_json(json_path)
     end
     dict[:c_ppm] = cc
 
-    dict[:fL_adapt] = Symbol(dict[:fL_adapt])
-    dict[:fG_adapt] = Symbol(dict[:fG_adapt])
     dict[:initial_intensity] = Symbol(dict[:initial_intensity])
     dict[:hmethod] = dict[:hmethod]
     dict[:θ] = collect(dict[:θ])

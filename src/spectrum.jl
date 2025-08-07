@@ -154,8 +154,10 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
         push!(tt, time_ns())
         cihic = Dict{Symbol, Float64}()
         linedata_pTNc = Dict{Symbol,Matrix{Float64}}()
-        #cc = par[:c_ppm][:CO2]
-        for (spec, cc) in par[:c_ppm]
+
+        for spec in par[:species]
+            cc = par[:c_ppm][spec]
+
             md   = molec_data_dict[spec]
             miso = md.iso_m       # Vector
             aiso = md.iso_a       # Vector
@@ -184,7 +186,7 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
         #spec = :CO2
         #cc = par[:c_ppm][spec]
         #linedata_pTNc_spec = linedata_pTNc[spec]
-        for (spec, cc) in par[:c_ppm]
+        for spec in par[:species]
             κbs[spec], ϵbs[spec] = sum_over_lines(par, λb, linedata_pTNc[spec], prealloc)
             ΔλLs = linedata_pTNc[spec][8,:]
             ΔλDs = linedata_pTNc[spec][9,:]

@@ -90,7 +90,7 @@ end
 function hitran_to_hdf5(species, hitran_out, hdf5, hdf5c, λmin, λmax, iso_max)
     iso, λ210, ΔE21, E1, E2, A21, B21, B12, g2, g1, S21r, γair, γself, nair, δair = load_hitran_data(hitran_out, λmin, λmax, iso_max)
 
-    datasets = [
+    datasets = Dict(string(species) => (
         ("iso"     , iso   ),
         ("λ210"    , λ210  ),
         ("ΔE21"    , ΔE21  ),
@@ -106,11 +106,11 @@ function hitran_to_hdf5(species, hitran_out, hdf5, hdf5c, λmin, λmax, iso_max)
         ("γself"   , γself ),
         ("nair"    , nair  ),
         ("δair"    , δair  )
-    ]
+    ))
 
     @infoe hdf5, string(species)
 
-    save_arrays_to_hdf5(hdf5, string(species), datasets)
+    save_arrays_to_hdf5(hdf5, datasets)
 
     data = Matrix{Float64}(undef, 14, length(λ210))
     data[ 1,:] = λ210  
@@ -128,7 +128,7 @@ function hitran_to_hdf5(species, hitran_out, hdf5, hdf5c, λmin, λmax, iso_max)
     data[13,:] = nair  
     data[14,:] = δair
 
-    save_arrays_to_hdf5(hdf5c, string(species), [("iso", iso), ("data", data)])
+    save_arrays_to_hdf5(hdf5c, Dict(string(species) => (("iso", iso), ("data", data))))
 end
 
 """
@@ -241,7 +241,7 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
     #κ2   = S21 * λ210^2                                               # [1]
 
-    iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ
+    iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ
 end
 
 @doc raw"""
@@ -258,7 +258,7 @@ No4
 function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
     iλl = argmin(line_data.E1)
     Threads.@threads for iλl in eachindex(line_data.λ210)
-        iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+        iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
         linedata_pTNc_spec[:, iλl] = [iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ]
     end
 end
