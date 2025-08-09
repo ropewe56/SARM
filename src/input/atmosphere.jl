@@ -22,24 +22,13 @@ end
     n
     e
 """
-function make_h_e(par)
-    nh = par[:nh]
-    e  = par[:e]
-    dhmin, dhmax, hmin, hmax = par[:dhmin], par[:dhmax], par[:hmin], par[:hmax]
-
-    dh = collect(range(dhmin, dhmax, nh))
-    dh = dh.^e
+function make_h_dh(par)
+    dh = collect(range(par[:dhmin], par[:dhmax], par[:nh]))
+    dh = dh.^par[:e]
     h  = cumsum(dh)
-    h  = h * hmax / maximum(h)
-
-    hout = [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 5000.0, 10000.0, 70000.0]
-    for ho in hout
-        hh = h .- ho
-        i = argmin(hh.^2)
-        h[i] = ho
-    end
-    h 
+    h * par[:hmax] / maximum(h)
 end
+
 
 function make_h_exp(par)
     nh = par[:nh]
@@ -88,6 +77,34 @@ function make_h_read(par)
     h["z"]
 end
 
+function make_h_equalnum(par)
+    np = par[:nh]*100
+
+    h = collect(range(par[:hmin], par[:hmax], np))
+    p = ip_hp.(h)
+    T = ip_hT.(h)
+    N = @. p / (c_kB * T)
+
+    # >> number of particles within a bin
+    hh = @. 0.5 * (h[2:end] + h[1:end-1])
+    dh = (h[2:end] - h[1:end-1])
+    Nh = @. 0.5*(N[2:end] + N[1:end-1]) * dh
+    h2, N2, ip = lininterp(hh, Nh, np)
+    h3 = collect(range(h[1], h[end], np)) 
+    N3 = ip.(h3)
+    # << number of particles within a bin
+
+    # >> interpolate N, h
+    Ni, hi, ip = lininterp(reverse(N3), reverse(h3), np) # knot vectors must be unique and increasing
+    # equidistant number of particles within a bin
+    x1, x2 = 0.05, 3.0
+    ff = collect(range(x1, 1.0, par[:nh])).^x2
+    fff = @. (ff - ff[1]) / (ff[end] - ff[1])
+    Nii = @. (1.0 - fff) * Ni[1] + fff * Ni[end]
+    hii = reverse(ip.(Nii))
+    hii
+end
+
 """
     get_hTpN(nh)
 
@@ -130,43 +147,29 @@ function Atmosphere(par)
         make_h_exp(par)
     elseif par[:hmethod] == :log10
         make_h_log10(par)
+    elseif par[:hmethod] == :dh
+        make_h_dh(par)
     elseif par[:hmethod] == :equalnumber
-        np = par[:nh]*100
+        make_h_equalnum(par)
+    end
 
-        h = collect(range(par[:hmin], par[:hmax], np))
-        p = ip_hp.(h)
-        T = ip_hT.(h)
-        N = @. p / (c_kB * T)
-
-        # >> number of particles within a bin
-        hh = @. 0.5 * (h[2:end] + h[1:end-1])
-        dh = (h[2:end] - h[1:end-1])
-        Nh = @. 0.5*(N[2:end] + N[1:end-1]) * dh
-        h2, N2, ip = lininterp(hh, Nh, np)
-        h3 = collect(range(h[1], h[end], np)) 
-        N3 = ip.(h3)
-        # << number of particles within a bin
-
-        # >> interpolate N, h
-        Ni, hi, ip = lininterp(reverse(N3), reverse(h3), np) # knot vectors must be unique and increasing
-        # equidistant number of particles within a bin
-        x1, x2 = 0.05, 3.0
-        ff = collect(range(x1, 1.0, par[:nh])).^x2
-        fff = @. (ff - ff[1]) / (ff[end] - ff[1])
-        Nii = @. (1.0 - fff) * Ni[1] + fff * Ni[end]
-        hii = reverse(ip.(Nii))
-        # << interpolate N, h
+    hout = par[:hout]
+    h_iout = if length(hout) > 2
+        h_iout = zeros(Int64, length(h))
+        for ho in hout
+            hh = h .- ho
+            i = argmin(hh.^2)
+            h[i] = ho
+            h_iout[i] = 1
+        end
+        h_iout
+    else
+        h_iout = ones(Int64, length(h))
     end
 
     p = ip_hp.(h)
     T = ip_hT.(h)
     N = @. p / (c_kB * T)
-
-    h_iout = if par[:hmethod] == :read_iz
-        load_array_from_hdf5(par[:h_iout])
-    else
-        ones(Int64, length(h))
-    end
 
     Atmosphere(h_iout, h, p, T, N)
 end

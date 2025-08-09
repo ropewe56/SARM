@@ -241,6 +241,10 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
     #κ2   = S21 * λ210^2                                               # [1]
 
+    if iso == 2 && abs(λ210 - 1.50003068e-5) < 1.0e-12 
+        @infoe @sprintf("%d, %18.8e  %12.4e  %12.4e  %12.4e  %12.4e  %12.4e}  %12.4e", iλl, λ210, ΔλL, ΔλG, N1, N2, ϵ, κ)
+    end
+
     iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ
 end
 

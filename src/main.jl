@@ -4,18 +4,16 @@ include("postprocessing/plot_results.jl")
 par = get_parameter()
 
 par[:θ]         = deg2rad.([0.0]) # , 40.0, 80.0
-par[:planck_Ts] = [288.0, 260.0, 240.0, 220.0, 215.0]
 #par[:θ]         = deg2rad.(Vector{Float64}([0.0, 40.0, 80.0]))
+par[:planck_Ts] = [288.0, 260.0, 240.0, 220.0, 215.0]
 
-par[:nh]        = 50
-
-par[:c_ppm] = Dict(:H2O => fill(C0H2O_PPM, 2).*PPM, :CO2 => [400.0, 800.0].*PPM)
+par[:nh]        = 500
+par[:hmethod]   = :dh
 
 par[:species]   = [:CO2]  #, :H2O]
-
+par[:c_ppm] = Dict(:H2O => fill(C0H2O_PPM, 2).*PPM, :CO2 => [400.0, 800.0].*PPM)
 par[:λmin]      = 12.0e-6
 par[:λmax]      = 18.0e-6
-par[:hmethod]   = :read
 
 subdirs = readdir(OUTROOT)
 #rm_subdirs(readdir(OUTROOT)[1:end])

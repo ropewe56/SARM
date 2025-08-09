@@ -69,9 +69,9 @@ function get_parameter()
         :albedo              => 0.3,
         :hmin                => 0.0,
         :hmax                => 70000.0,
-        :dhmin               => 10.0,
-        :dhmax               => 500.0,
-        :e                   => 2.0,
+        :dhmin               => 1.0,
+        :dhmax               => 1000.0,
+        :e                   => 1.0,
         
         :nλb                 => 1000000,
         :nh                  => 500,
@@ -89,7 +89,8 @@ function get_parameter()
 
         :omit_absorb_emit    => [:omit_none, :omit_emission, :omit_absorption][1],
         :initial_intensity   => :planck,
-        :hmethod             => :equalnumber,
+        :hmethod             => :dh,
+        :hout                => [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 7000.0, 10000.0, 20000.0, 40000.0, 70000.0],
         :fL_adapt            => [0, 1, 2, 3][4], # [:none, :scale, :tail, :scaletail][4],
         :fG_adapt            => [0, 1, 2, 3][1], # [:none, :scale, :tail, :scaletail][1],
     )
@@ -144,3 +145,4 @@ function from_json(json_path)
 end
 
 make_λb(par) = collect(range(par[:λmin], par[:λmax], par[:nλb]))
+

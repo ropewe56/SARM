@@ -247,6 +247,7 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
         # << 5
 
         dt = tt[2:end] - tt[1:end-1]
+        @infoe "dt", (tt[end] - tt[1])*1.0e-3
         push!(cputimes, [Float64(x).*1.0e-6 for x in dt])
     end  # lop over z ih
     
