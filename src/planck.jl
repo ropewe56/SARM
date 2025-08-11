@@ -19,7 +19,9 @@ I = \dfrac{2 h  c^2}{λ^5} \dfrac{1}{\exp\left(\dfrac{h  c}{k_B T λ} - 1 \right
 end
 
 @inline function planck_λ(T::Float64, λ::Vector{Float64})
-    @. 2.0 * hc * c_c / λ^5 / (exp(hc / (λ * c_kB * T)) - 1.0)
+    p = @. 2.0 * c_h * c_c * c_c / λ^5 / (exp(c_h * c_c / (λ * c_kB * T)) - 1.0)
+    #@infoe "int_I", sum(p) * (λ[2]-λ[1]), λ[2]-λ[1], λ[1], λ[end], p[1], T, c_kB;
+    p
 end
 
 function compute_planck(T::Union{Float64,Vector{Float64}}, λ::Vector{Float64})
@@ -59,7 +61,7 @@ function initial_intensity(par, λb)
         zeros(Float64, length(λλ))
     end
     il = argmin(abs.(λb .- 15.0e-6))
-    save_planck_as_hdf5(joinpath(par[:paths][:initial_intensity]), par[:planck_Ts], λb, Iλb)
+    save_planck_as_hdf5(joinpath(par[:paths][:init_intensity_path]), par[:planck_Ts], λb, Iλb)
     Iλb
 end
 

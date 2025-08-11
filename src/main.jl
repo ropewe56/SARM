@@ -17,7 +17,7 @@ par[:λmax]      = 18.0e-6
 
 subdirs = readdir(OUTROOT)
 #rm_subdirs(readdir(OUTROOT)[1:end])
-#clear_subdir(subdir)
+clear_subdir(subdirs[end])
 subdir = new_subdir_path()
 subdir = subdirs[end]
 par[:paths] = make_outpaths(subdir);

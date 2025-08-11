@@ -11,7 +11,16 @@ end
 
 function clear_subdir(subdir)
     rmpath = @sprintf("%s/*", joinpath(OUTROOT, subdir))
-    run(`rm -rf $rmpath`)
+    for (root, dirs, files) in walkdir(rmpath)
+        for file in files
+            if !occursin("", file)
+                filepath = joinpath(root, file)
+                rm(filepath; force=true)
+            end
+        end
+    end
+    
+#    run(`bash -c "find $rmpath -type f -exec rm {} \;"`)
 end
 
 function rm_subdirs(subdirs)
@@ -46,7 +55,7 @@ function make_outpaths(subdir)
         :dbpath            => joinpath(root, "db.sqlite3"),
         :planck_single     => joinpath(intensity, "planck_single.hdf5"),
         :planck_multi      => joinpath(intensity, "planck_multi.hdf5"),
-        :initial_intensity => joinpath(intensity, "initial_intensity.hdf5"),
+        :init_intensity_path => joinpath(intensity, "initial_intensity.hdf5"),
         :input_data        => joinpath(root, "input_data.hdf5"),
         :hpath             => hpath,
         :h_iout            => h_iout,

@@ -229,15 +229,19 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
 
         # >> 5
         # add results
-        int_I, int_ϵ, int_Iκ, int_ϵs, mean_κs, int_Iκs = integrated_results(λb, Iλb, κb, ϵb, ϵbs, κbs)        
+        int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs = integrated_results(λb, Iλb, ϵb, κb, ϵbs, κbs)        
+
+        int_I  = sum(Iλb) * Δλb
+        int_ϵ  = sum(ϵb)  * Δλb
+        int_Iκ = sum(Iλb .* κb) * Δλb
 
         insert_into_resultdb(result_db, hdf5_path, ic, iθ, ih, atmosphere.h[ih], θ, T, N, cihic, ΔλL_mean, ΔλD_mean, 
                                         int_I, int_ϵ, int_Iκ, int_ϵs, mean_κs, int_Iκs)
 
         ## write results to log file
         for (i, spec) in enumerate(keys(cihic))
-            out = @sprintf("%s, ih = %3d, h = %12.5e,  c = %12.5e, θ = %12.5e, T = %12.5e, N = %12.5e, I = %12.5e, ϵ = %12.5e, Iκ = %12.5e, ΔλL = %12.5e, ΔλD = %12.5e",
-                                spec, ih, atmosphere.h[ih], cihic[spec], θ*180.0/π, T, N, int_I[1], int_ϵ[1], int_Iκ[1], ΔλL_mean[spec], ΔλD_mean[spec])
+            out = @sprintf("%s, ih = %3d, h = %12.5e, c = %12.5e, I = %12.5e, ϵ = %12.5e, Iκ = %12.5e, ΔλL = %12.5e, ΔλD = %12.5e, T = %12.5e, N = %12.5e",
+                                spec, ih, atmosphere.h[ih], cihic[spec], int_I, int_ϵ, int_Iκ, ΔλL_mean[spec], ΔλD_mean[spec], T, N)
             @infoe out
             write(logfio, out * "\n")
         end
@@ -247,7 +251,7 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
         # << 5
 
         dt = tt[2:end] - tt[1:end-1]
-        @infoe "dt", (tt[end] - tt[1])*1.0e-3
+        #@infoe "dt", (tt[end] - tt[1])*1.0e-3
         push!(cputimes, [Float64(x).*1.0e-6 for x in dt])
     end  # lop over z ih
     

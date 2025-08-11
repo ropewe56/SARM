@@ -182,6 +182,7 @@ function LineData(hdf5_path)
         δair  = iso_data["δair"]                                              # 1 / (m * Pa)
         LineData(Symbol(species), iso, λ210, ΔE21, E1, E2, A21, B21, B12, g2, g1, S21r, γair, γself, nair, δair)
     end
+    @infoe @sprintf("nλl = %d", length(ld.λ210))
     ld
 end
 
@@ -241,9 +242,11 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
     #κ2   = S21 * λ210^2                                               # [1]
 
-    if iso == 2 && abs(λ210 - 1.50003068e-5) < 1.0e-12 
-        @infoe @sprintf("%d, %18.8e  %12.4e  %12.4e  %12.4e  %12.4e  %12.4e}  %12.4e", iλl, λ210, ΔλL, ΔλG, N1, N2, ϵ, κ)
-    end
+#    if iso == 2 && abs(λ210 - 1.50003068e-5) < 1.0e-12 
+#        @infoe @sprintf("λ210 = %14.8e, ϵ = %12.4e, κ = %12.4e, N1 = %12.4e, N2 = %12.4e, ΔλL = %12.4e, ΔλG = %12.4e, iλl = %d", λ210, ϵ, κ, N1, N2, ΔλL, ΔλG, iλl)
+#        @infoe @sprintf("Qiso = %8.2e, miso = %8.2e, aiso = %8.2e, ciso = %8.2e, T = %8.2e, N = %8.2e, p = %8.2e", 
+#            Qiso[iso], miso[iso], aiso[iso], ciso, T, N, p)
+#    end
 
     iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ
 end
@@ -281,8 +284,8 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
 
     λ1   = λb[1]
     λend = λb[end]
-    Δλ   = λend - λ1
-    dλ   = λb[2] - λ1
+    Dλ   = λend - λ1
+    Δλ   = λb[2] - λ1
     nλb  = length(λb)
 
     nbthreads = 1#Threads.nthreads()
@@ -306,14 +309,15 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
     ϵ    = ML[12,:]
     κ    = ML[13,:]
 
-    iλb = @. floor(Int64, (λ21 - λ1) / Δλ * Float64(nλb-1)) + 1
-    δiλ = @. floor(Int64, (ΔλLh + ΔλGh) * f_Δλ_factor / dλ)
+    iλb = @. floor(Int64, (λ21 - λ1) / Dλ * Float64(nλb-1)) + 1
+    δiλ = @. floor(Int64, (ΔλLh + ΔλGh) * f_Δλ_factor / Δλ)
     iλm = @. max(1, iλb - δiλ)
     iλp = @. min(nλb, iλb + δiλ + 1)
 
     # fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, fG_adapt)        
     # fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, fL_adapt)
 
+    int_f = zeros(Float64, nλl)
     #Threads.@threads 
     for iλl in 1:nλl 
         tid = 1#Threads.threadid()
@@ -327,6 +331,8 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
 
         κbt[tid][iλm_:iλp_] += @. κ[iλl] * fb
         ϵbt[tid][iλm_:iλp_] += @. ϵ[iλl] * fb
+
+        int_f[iλl] = sum(fb)*Δλ;
     end
 
     κb  = alloc1(prealloc, :κb,  nλb, true)
@@ -335,6 +341,8 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
         κb[:] += κbt[ith][:]
         ϵb[:] += ϵbt[ith][:]
     end
+
+#    @infoe @sprintf("int_ϵ = %8.2e, int_κ = %8.2e, extrema(int_f) = %s", sum(ϵb) * Δλ, sum(κb) * Δλ, extrema(int_f))
 
     κb, ϵb
 end
