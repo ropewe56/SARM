@@ -34,31 +34,25 @@ function make_outpaths(subdir)
     root      = joinpath(OUTROOT, subdir)
     intensity = joinpath(root, "intensity")
     spectrum  = joinpath(root, "spectrum")
-    atm       = joinpath(root, "atm")
     mkpath(root)
     mkpath(intensity)
     mkpath(spectrum)
-    mkpath(atm)
 
-    hpath  = "/home/wester/Projects/Julia/Climate-Energy/Sarm.rs/data/z.hdf5"
-    h_iout = "/home/wester/Projects/Julia/Climate-Energy/Sarm.rs/data/z_iout.hdf5"
-    molecdata_path = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results/2025-07-31T16:31:15.003/input_data.hdf5"
-    linedata_path  = Dict( "CO2" => "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/CO2/CO2_rwfmt.hdf5", 
-                            "H2O" => "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/H2O/H2O_rwfmt.hdf5")
+    projroot = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl"
+    molecdata_path = joinpath(projroot, "results", subdir, "input_data.hdf5")
+    linedata_path  = Dict(  "CO2" => joinpath(projroot, "data/CO2/CO2_rwfmt.hdf5"), 
+                            "H2O" => joinpath(projroot, "data/H2O/H2O_rwfmt.hdf5"))
 
     OrderedDict(
         :outroot           => root,
         :intensity         => intensity,
         :spectrum          => spectrum,
-        :atm               => atm,
         :logfile           => joinpath(root, "log.out"),
         :dbpath            => joinpath(root, "db.sqlite3"),
         :planck_single     => joinpath(intensity, "planck_single.hdf5"),
         :planck_multi      => joinpath(intensity, "planck_multi.hdf5"),
         :init_intensity_path => joinpath(intensity, "initial_intensity.hdf5"),
         :input_data        => joinpath(root, "input_data.hdf5"),
-        :hpath             => hpath,
-        :h_iout            => h_iout,
         :molecdata_path    => molecdata_path,
         :linedata_path     => linedata_path
     )
@@ -80,7 +74,7 @@ function get_parameter()
         :hmax                => 70000.0,
         :dhmin               => 1.0,
         :dhmax               => 1000.0,
-        :e                   => 1.0,
+        :he                  => 1.0,
         
         :nλb                 => 1000000,
         :nh                  => 500,

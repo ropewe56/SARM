@@ -24,7 +24,7 @@ end
 """
 function make_h_dh(par)
     dh = collect(range(par[:dhmin], par[:dhmax], par[:nh]))
-    dh = dh.^par[:e]
+    dh = dh.^par[:he]
     h  = cumsum(dh)
     h * par[:hmax] / maximum(h)
 end
@@ -32,11 +32,11 @@ end
 
 function make_h_exp(par)
     nh = par[:nh]
-    e  = par[:e]
+    he = par[:he]
     dhmin, dhmax, hmin, hmax = par[:dhmin], par[:dhmax], par[:hmin], par[:hmax]
 
     dh = collect(range(dhmin, dhmax, nh))
-    dh = dh.^e
+    dh = dh.^he
     h  = cumsum(dh)
     h  = h * hmax / maximum(h)
 
@@ -139,7 +139,7 @@ function Atmosphere(par)
     T12 = ip_hT.(h1)
     N12 = @. p1 / (c_kB * T12)
 
-    h = if par[:e] == :e
+    h = if par[:he] == :he
         make_h_e(par)
     elseif par[:hmethod] == :read || par[:hmethod] == :read_iz
         make_h_read(par)

@@ -4,6 +4,13 @@ Pkg.develop(url="/home/wester/Projects/Julia/Utilities/SimpleLog.jl")
 Pkg.develop(url="/home/wester/Projects/Julia/Utilities/SpecialFileIO.jl")
 Pkg.develop(url="/home/wester/Projects/Julia/Physics/PhysConst.jl")
 
+using Pkg
+Pkg.add("CUDA")
+
+# smoke test (this will download the CUDA toolkit)
+using CUDA
+CUDA.versioninfo()
+
 #Pkg.rm("SimpleLog")
 #Pkg.rm("SpecialFileIO")
 #Pkg.rm("PhysConst")

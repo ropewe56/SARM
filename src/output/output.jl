@@ -25,7 +25,7 @@ function write_atmosphere_to_hdf5(paths, atm)
 end
 
 function write_results_to_hdf5(paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb, κbs, ϵbs)
-    spectrum_name = @sprintf("spectrum_%03d_%d_%d_%4.1f.hdf5", ic, iθ, ih, atm.h[ih]*1.0e-3)
+    spectrum_name = @sprintf("spectrum_%d_%d_%03d_%07.1f.hdf5", ic, iθ, ih, atm.h[ih])
     hdf5_path = joinpath(paths[:spectrum], spectrum_name)
 
     # ML :     iso, S21, λ21, γ, ΔλL, ΔλG, N1, N2, miso[iso], ϵ, κ1, κ2

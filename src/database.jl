@@ -22,8 +22,9 @@ function ResultDB(par)
     dbpath = par[:paths][:dbpath]
 
     if isfile(dbpath)
-        @warne "database", dbpath, "exists"
-        run(`rm $dbpath`)
+        @warne @sprintf("Database %s exists. Will be deleted!", dbpath)
+        rm(dbpath; force=true)
+        #run(`rm $dbpath`)
     end
     db = SQLite.DB(dbpath)
 

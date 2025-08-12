@@ -182,14 +182,14 @@ function LineData(hdf5_path)
         δair  = iso_data["δair"]                                              # 1 / (m * Pa)
         LineData(Symbol(species), iso, λ210, ΔE21, E1, E2, A21, B21, B12, g2, g1, S21r, γair, γself, nair, δair)
     end
-    @infoe @sprintf("nλl = %d", length(ld.λ210))
+    #@infoe @sprintf("nλl = %d", length(ld.λ210))
     ld
 end
 
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+function compute_line_emission_and_absorption_iλ(linedata_mat::Matrix{Float64}, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
@@ -248,7 +248,19 @@ function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qis
 #            Qiso[iso], miso[iso], aiso[iso], ciso, T, N, p)
 #    end
 
-    iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ
+    linedata_mat[1, iλl] = iso
+    linedata_mat[2, iλl] = miso[iso]
+    linedata_mat[3, iλl] = aiso[iso]
+    linedata_mat[4, iλl] = Qiso[iso]
+    linedata_mat[5, iλl] = S21
+    linedata_mat[6, iλl] = λ21
+    linedata_mat[7, iλl] = γp
+    linedata_mat[8, iλl] = ΔλL
+    linedata_mat[9, iλl] = ΔλG
+    linedata_mat[10, iλl] = N1
+    linedata_mat[11, iλl] = N2
+    linedata_mat[12, iλl] = ϵ
+    linedata_mat[13, iλl] = κ
 end
 
 @doc raw"""
@@ -262,11 +274,10 @@ end
     NCO2 - CO2 concentration
 No4
 """
-function compute_lines_emission_and_absorption!(linedata_pTNc_spec::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
+function compute_lines_emission_and_absorption!(linedata_mat::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
     iλl = argmin(line_data.E1)
     Threads.@threads for iλl in eachindex(line_data.λ210)
-        iso, S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
-        linedata_pTNc_spec[:, iλl] = [iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ]
+        compute_line_emission_and_absorption_iλ(linedata_mat, line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
     end
 end
 
@@ -277,7 +288,7 @@ end
     N - density
     ML = ML[:CO2]
 """
-function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)    
+function sum_over_lines!(ϵb, κb, par, λb, linedata_spec)    
     f_Δλ_factor = par[:f_Δλ_factor]
     fL_adapt    = par[:fL_adapt]
     fG_adapt    = par[:fG_adapt]
@@ -288,63 +299,33 @@ function sum_over_lines(par, λb, linedata_pTNc_spec,  prealloc)
     Δλ   = λb[2] - λ1
     nλb  = length(λb)
 
-    nbthreads = 1#Threads.nthreads()
-    tid = 1
-    iλl = 1
-
-    κbt = alloc21(prealloc, :κbt, nλb, nbthreads, true)
-    ϵbt = alloc21(prealloc, :ϵbt, nλb, nbthreads, true)
-
-    λ21     = linedata_pTNc_spec[6, :]
-    index   = @. ifelse(λ21 >= λ1 && λ21 <= λend, true, false)
-    ML      = linedata_pTNc_spec[:,index]
-    n1, nλl = size(ML)
-
     # 1    2          3          4          5    6    7   8    9    10  11  12 13
     # iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ 
+    λ21  = linedata_spec[6,:]
+    ΔλLh = linedata_spec[8,:] .* 0.5
+    ΔλGh = linedata_spec[9,:] .* 0.5
+    ϵ    = linedata_spec[12,:]
+    κ    = linedata_spec[13,:]
+    nλl  = length(λ21)  
 
-    λ21  = ML[6,:]
-    ΔλLh = ML[8,:] .* 0.5
-    ΔλGh = ML[9,:] .* 0.5
-    ϵ    = ML[12,:]
-    κ    = ML[13,:]
-
-    iλb = @. floor(Int64, (λ21 - λ1) / Dλ * Float64(nλb-1)) + 1
-    δiλ = @. floor(Int64, (ΔλLh + ΔλGh) * f_Δλ_factor / Δλ)
-    iλm = @. max(1, iλb - δiλ)
-    iλp = @. min(nλb, iλb + δiλ + 1)
-
-    # fG = f_gauss(λb[iλm:iλp], λb[iλb], ΔλGh, fG_adapt)        
-    # fL = f_lorentz(λb[iλm:iλp], λb[iλb], ΔλLh, fL_adapt)
+    fill!(ϵb, 0.0)
+    fill!(κb, 0.0)
 
     int_f = zeros(Float64, nλl)
-    #Threads.@threads 
     for iλl in 1:nλl 
-        tid = 1#Threads.threadid()
-        
-        iλb_ = iλb[iλl]
-        iλm_ = iλm[iλl]
-        iλp_ = iλp[iλl]
-        λrange = @view λb[iλm_:iλp_]
+        iλb = floor(Int64, (λ21[iλl] - λ1) / Dλ * Float64(nλb-1)) + 1
+        δiλ = floor(Int64, (ΔλLh[iλl] + ΔλGh[iλl]) * f_Δλ_factor / Δλ)
+        iλm = max(1, iλb - δiλ)
+        iλp = min(nλb, iλb + δiλ + 1)
+        λrange = @view λb[iλm:iλp]
 
-        fb = voigt(λrange, λb[iλb_], ΔλLh[iλl], ΔλGh[iλl], fL_adapt, fG_adapt)
+        fb = voigt(λrange, λb[iλb], ΔλLh[iλl], ΔλGh[iλl], fL_adapt, fG_adapt)
 
-        κbt[tid][iλm_:iλp_] += @. κ[iλl] * fb
-        ϵbt[tid][iλm_:iλp_] += @. ϵ[iλl] * fb
+        @. κb[iλm:iλp] += @. κ[iλl] * fb
+        @. ϵb[iλm:iλp] += @. ϵ[iλl] * fb
 
         int_f[iλl] = sum(fb)*Δλ;
     end
-
-    κb  = alloc1(prealloc, :κb,  nλb, true)
-    ϵb  = alloc1(prealloc, :ϵb,  nλb, true)
-    for ith in 1:nbthreads
-        κb[:] += κbt[ith][:]
-        ϵb[:] += ϵbt[ith][:]
-    end
-
-#    @infoe @sprintf("int_ϵ = %8.2e, int_κ = %8.2e, extrema(int_f) = %s", sum(ϵb) * Δλ, sum(κb) * Δλ, extrema(int_f))
-
-    κb, ϵb
 end
 
 @doc raw"""
