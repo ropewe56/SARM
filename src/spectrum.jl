@@ -7,7 +7,7 @@ using DataFrames
 using PhysConst
 using SimpleLog
 
-function integrate_results(par, h, θ, T, N, ΔλL_mean, ΔλD_mean, Iλb, ϵb, κb)
+function integrate_results(par, h, θ, T, N, ΔλL_mean, ΔλG_mean, Iλb, ϵb, κb)
     Δλb =  par[:Δλb]
 
     nλb = length(Iλb)
@@ -33,7 +33,7 @@ function integrate_results(par, h, θ, T, N, ΔλL_mean, ΔλD_mean, Iλb, ϵb, 
     for (i, spec) in enumerate(keys(κb))
         int_ϵ[1][spec]  = sum(ϵb[spec]) * Δλb
         int_Iκ[1][spec] = sum(Iκ[spec]) * Δλb
-        int_κ[1][spec] = Statistics.mean(κb[spec])
+        int_κ[1][spec]  = Statistics.mean(κb[spec])
     end
 
     # integrate over nλb/6,...,nλb-nλb/6  wavelengths
@@ -109,10 +109,10 @@ end
 """
     integrate_along_path(par, atm, moleculardata, linedata, ch0, ic, iθ, θ)
 
-    integrate_along_path(par, prealloc, rdb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
+    integrate_along_path(par, rdb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
 
 """
-function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere, 
+function integrate_along_path(par, result_db, λb, Iλb0, atmosphere, 
                     molec_data_dict::Dict{Symbol,MolecularData}, 
                     line_data_dict::Dict{Symbol,LineData}, ic, iθ, θ)
 
@@ -123,9 +123,26 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
     surface_T = par[:surface_T]
     T_of_h = par[:T_of_h ]
     N_of_h = par[:N_of_h ]
+    nλb = length(λb)
 
     Tmin = par[:surface_T]
     Nmin = 1.0e30
+
+    linedata_dict = Dict{Symbol,Matrix{Float64}}()
+    for spec in par[:species]
+        nλl = length(line_data_dict[spec].λ210)
+        linedata_dict[spec] = Matrix{Float64}(undef, 13, nλl)
+    end
+    ΔλL_mean = Dict{Symbol, Float64}()
+    ΔλG_mean = Dict{Symbol, Float64}()
+    ϵb  = zeros(Float64, nλb)
+    κb  = zeros(Float64, nλb)
+    ϵbs = Dict{Symbol, Vector{Float64}}()
+    κbs = Dict{Symbol, Vector{Float64}}()
+    for spec in par[:species]
+        ϵbs[spec] = zeros(Float64, nλb)
+        κbs[spec] = zeros(Float64, nλb)
+    end
 
     logfio = open(par[:paths][:logfile], "w")
     cputimes = []
@@ -151,9 +168,9 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
     end
 
     for (ih,h) in enumerate(atmosphere.h)
+        tt = [time_ns()]
         
         # >> 1  pressure, temperature and density at height = z
-        tt = [time_ns()]
         p = atmosphere.p[ih]
         T = atmosphere.T[ih]
         N = atmosphere.N[ih]
@@ -173,14 +190,8 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
 
         for spec in par[:species]
             cc = par[:c_ppm][spec]
-
             md   = molec_data_dict[spec]
-            miso = md.iso_m       # Vector
-            aiso = md.iso_a       # Vector
-            Qiso = md.Qisoh[:,ih] # Vector 
-            Qref = md.Qref # Vector 
-
-            cihic[spec] = md.cnh[ih] * cc[ic]
+            cihic[spec] = molec_data_dict[spec].cnh[ih] * cc[ic]
 
             line_data = line_data_dict[spec]
             nλl = length(line_data.λ210)
@@ -188,19 +199,19 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
 
             # 1    2          3          4          5    6    7   8    9    10  11  12 13
             # iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ 
-            compute_lines_emission_and_absorption!(linedata_dict[spec], par, line_data, Qref, Qiso, miso, aiso, ciso, T, N, p);            
+            compute_lines_emission_and_absorption!(linedata_dict[spec], par, line_data, md.Qref, md.Qisoh[:,ih], md.iso_m, md.iso_a, ciso, T, N, p);            
         end
         # >> 2
+        push!(tt, time_ns())
 
         # << 3
-        push!(tt, time_ns())
         for spec in par[:species]
             sum_over_lines!(ϵbs[spec], κbs[spec], par, λb, linedata_dict[spec])
             ΔλL_mean[spec] = Statistics.mean(linedata_dict[spec][8,:])
-            ΔλG_mean[spec] = Statistics.mean(linedata_dict[spec][9,:])
+            ΔλG_mean[spec] = Statistics.mean(linedata_dict[spec][9,:])            
         end
-        push!(tt, time_ns())
         # << 3
+        push!(tt, time_ns())
 
         # >> 4
         # step size Δs = z/cos(θ)
@@ -210,15 +221,15 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
             Δs = (atmosphere.h[ih] - atmosphere.h[ih-1]) / cos(θ)
         end
 
-
-        # add species κ, ϵ  
-        fill!(κb, nλb)
-        fill!(ϵb, nλb)
-        for (k, val) in κbs
-            @. κb += val
-        end
+        # add species ϵ, κ
+        nλb = length(Iλb)
+        fill!(ϵb, 0.0)
+        fill!(κb, 0.0)
         for (k, val) in ϵbs
             @. ϵb += val
+        end
+        for (k, val) in κbs
+            @. κb += val
         end
 
         integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par)
@@ -229,8 +240,8 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
         else
             "none"
         end
-        push!(tt, time_ns())
         # << 4
+        push!(tt, time_ns())
 
         # >> 5
         # add results
@@ -243,20 +254,15 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
         insert_into_resultdb(result_db, hdf5_path, ic, iθ, ih, atmosphere.h[ih], θ, T, N, cihic, ΔλL_mean, ΔλG_mean, 
                                         int_I, int_ϵ, int_Iκ, int_ϵs, mean_κs, int_Iκs)
 
-        ## write results to log file
         for (i, spec) in enumerate(keys(cihic))
-            out = @sprintf("%s, ih = %3d, h = %12.5e, c = %12.5e, I = %12.5e, ϵ = %12.5e, Iκ = %12.5e, ΔλL = %12.5e, ΔλD = %12.5e, T = %12.5e, N = %12.5e",
+            out = @sprintf("%s, ih = %3d, h = %12.5e, c = %12.5e, I = %12.5e, ϵ = %12.5e, Iκ = %12.5e, ΔλL = %12.5e, ΔλG = %12.5e, T = %12.5e, N = %12.5e",
                                 spec, ih, atmosphere.h[ih], cihic[spec], int_I, int_ϵ, int_Iκ, ΔλL_mean[spec], ΔλG_mean[spec], T, N)
             @infoe out
-            write(logfio, out * "\n")
-        end
-        flush(logfio)
-        
-        push!(tt, time_ns())
+        end        
         # << 5
+        push!(tt, time_ns())
 
         dt = tt[2:end] - tt[1:end-1]
-        #@infoe "dt", (tt[end] - tt[1])*1.0e-3
         push!(cputimes, [Float64(x).*1.0e-6 for x in dt])
     end  # lop over z ih
     
@@ -265,8 +271,9 @@ function integrate_along_path(par, prealloc, result_db, λb, Iλb0, atmosphere,
     im = 1
     for im in 1:m2
         tim = CPUt[:,im]
-        tmin, tmax = extrema(tim)
-        @printf("%d : sum = %8.2e s, mean = %8.2e s, min = %8.2e s, max = %8.2e s\n", im, sum(tim), Statistics.mean(tim), tmin, tmax)
+        @printf("%d : sum = %8.2e s\n", im, sum(tim))
+        #tmin, tmax = extrema(tim)
+        #@printf("%d : sum = %8.2e s, mean = %8.2e s, min = %8.2e s, max = %8.2e s\n", im, sum(tim), Statistics.mean(tim), tmin, tmax)
     end 
     @printf("totalsum= %8.2e s\n", sum(CPUt))
 
@@ -277,11 +284,11 @@ end
 No1
 """
 function integrate(par, result_db, λb, Iλb, atmosphere::Atmosphere, molec_data_dict::Dict{Symbol,MolecularData},  
-                        line_data_dict::Dict{Symbol,LineData}, prealloc::Preallocated)
+                        line_data_dict::Dict{Symbol,LineData})
     ic     = 1
     iθ, θ  = 1, 0.0
     for ic in 1:par[:nc], (iθ, θ) in enumerate(par[:θ])
-        @time integrate_along_path(par, prealloc, result_db, λb, Iλb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
+        @time integrate_along_path(par, result_db, λb, Iλb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
     end
 end
 

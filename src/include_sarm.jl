@@ -1,5 +1,4 @@
 include("constants.jl")
-include("preallocated.jl")
 include("input/parameter.jl")
 include("input/atmosphere.jl")
 include("input/moleculardata.jl")
