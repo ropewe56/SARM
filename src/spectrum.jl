@@ -128,6 +128,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     Tmin = par[:surface_T]
     Nmin = 1.0e30
 
+    # >> preallocate ararys
     linedata_dict = Dict{Symbol,Matrix{Float64}}()
     for spec in par[:species]
         nλl = length(line_data_dict[spec].λ210)
@@ -137,6 +138,9 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     ΔλG_mean = Dict{Symbol, Float64}()
     ϵb  = zeros(Float64, nλb)
     κb  = zeros(Float64, nλb)
+    nbthreads = Threads.nthreads()
+    ϵbt = Matrix{Float64}(undef, nλb, nbthreads)
+    κbt = Matrix{Float64}(undef, nλb, nbthreads)
     ϵbs = Dict{Symbol, Vector{Float64}}()
     κbs = Dict{Symbol, Vector{Float64}}()
     for spec in par[:species]
@@ -206,7 +210,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
         # << 3
         for spec in par[:species]
-            sum_over_lines!(ϵbs[spec], κbs[spec], par, λb, linedata_dict[spec])
+            sum_over_lines!(ϵbt, κbt, ϵbs[spec], κbs[spec], par, λb, linedata_dict[spec])
             ΔλL_mean[spec] = Statistics.mean(linedata_dict[spec][8,:])
             ΔλG_mean[spec] = Statistics.mean(linedata_dict[spec][9,:])            
         end
@@ -247,16 +251,16 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         # add results
         int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs = integrated_results(λb, Iλb, ϵb, κb, ϵbs, κbs)        
 
-        int_I  = sum(Iλb) * Δλb
-        int_ϵ  = sum(ϵb)  * Δλb
-        int_Iκ = sum(Iλb .* κb) * Δλb
+        #int_I  = sum(Iλb) * Δλb
+        #int_ϵ  = sum(ϵb)  * Δλb
+        #int_Iκ = sum(Iλb .* κb) * Δλb
 
         insert_into_resultdb(result_db, hdf5_path, ic, iθ, ih, atmosphere.h[ih], θ, T, N, cihic, ΔλL_mean, ΔλG_mean, 
-                                        int_I, int_ϵ, int_Iκ, int_ϵs, mean_κs, int_Iκs)
+                                        int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs)
 
         for (i, spec) in enumerate(keys(cihic))
-            out = @sprintf("%s, ih = %3d, h = %12.5e, c = %12.5e, I = %12.5e, ϵ = %12.5e, Iκ = %12.5e, ΔλL = %12.5e, ΔλG = %12.5e, T = %12.5e, N = %12.5e",
-                                spec, ih, atmosphere.h[ih], cihic[spec], int_I, int_ϵ, int_Iκ, ΔλL_mean[spec], ΔλG_mean[spec], T, N)
+            out = @sprintf("%s, ih = %3d, h = %10.4e, c = %10.4e, I = %10.4e, ϵ = %10.4e, Iκ = %10.4e, ΔλL = %10.4e, ΔλG = %10.4e, T = %10.4e, N = %10.4e",
+                                spec, ih, atmosphere.h[ih], cihic[spec], int_Ij, int_ϵj, int_Iκj, ΔλL_mean[spec], ΔλG_mean[spec], T, N)
             @infoe out
         end        
         # << 5

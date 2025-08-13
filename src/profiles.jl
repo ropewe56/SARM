@@ -1,5 +1,6 @@
 using PhysConst
 using SimpleLog
+using LoopVectorization
 
 @inline function adapt_f(λ, λ0, Δλh, f, f_adapt)
     if f_adapt == :none
@@ -20,13 +21,21 @@ end
 
 @inline function f_gauss(λ, λ0, ΔλGh, fG_adapt)
     a = LOG2/ΔλGh^2
-    f = @. sqrt(a/π) * exp(- a * (λ - λ0)^2)
-    adapt_f(λ, λ0, ΔλGh, f, fG_adapt)
+    f = Vector{Float64}(undef, length(λ))
+    @turbo for i in eachindex(λ)
+        f[i] = sqrt(a/π) * exp(- a * (λ[i] - λ0)^2)
+    end
+    #adapt_f(λ, λ0, ΔλGh, f, fG_adapt)
+    f
 end
 
 @inline function f_lorentz(λ, λ0, ΔλLh, fL_adapt)
-    f = @. 1.0 / (π * ΔλLh * (1.0 + ((λ - λ0)/ΔλLh)^2))
-    adapt_f(λ, λ0, ΔλLh, f, fL_adapt)
+    f = Vector{Float64}(undef, length(λ))
+    @turbo for i in eachindex(λ)
+        f[i] = 1.0 / (π * ΔλLh * (1.0 + ((λ[i] - λ0)/ΔλLh)^2))
+    end
+    #adapt_f(λ, λ0, ΔλLh, f, fL_adapt)
+    f
 end
 
 @inline function voigt(λ, λ0, ΔλLh, ΔλGh, fL_adapt, fG_adapt)

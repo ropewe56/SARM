@@ -4,6 +4,7 @@ using Printf
 using Interpolations
 using DataFrames
 using CSV
+using LoopVectorization
 
 @inline function S_T(S21r, E1, E2, β, βr, QT, QTr)
     ΔE21 = E2-E1
@@ -189,14 +190,13 @@ end
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-function compute_line_emission_and_absorption_iλ(linedata_mat::Matrix{Float64}, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+@inline function compute_line_emission_and_absorption_iλ(linedata_mat::Matrix{Float64}, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
 
     iso   = line_data.iso[iλl]                                               # 
     λ210  = line_data.λ210[iλl]                                              # m
-    ΔE21  = line_data.ΔE21[iλl]                                              # J        
     E1    = line_data.E1[iλl]                                                # J
     E2    = line_data.E2[iλl]                                                # J
     A21   = line_data.A21[iλl]                                               # 1/s
@@ -209,10 +209,6 @@ function compute_line_emission_and_absorption_iλ(linedata_mat::Matrix{Float64},
     γself = line_data.γself[iλl]                                             # 1 / (m * Pa)
     nair  = line_data.nair[iλl]                                              # 
     δair  = line_data.δair[iλl]                                              # 1 / (m * Pa)
-
-    if iso > 11
-        @warne mid, lid, λ210
-    end
 
     Niso = ciso * N  * aiso[iso]                                            #  [1/m^3]
 
@@ -288,7 +284,7 @@ end
     N - density
     ML = ML[:CO2]
 """
-function sum_over_lines!(ϵb, κb, par, λb, linedata_spec)    
+function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata_spec)    
     f_Δλ_factor = par[:f_Δλ_factor]
     fL_adapt    = par[:fL_adapt]
     fG_adapt    = par[:fG_adapt]
@@ -308,14 +304,15 @@ function sum_over_lines!(ϵb, κb, par, λb, linedata_spec)
     κ    = linedata_spec[13,:]
     nλl  = length(λ21)  
 
-    fill!(ϵb, 0.0)
-    fill!(κb, 0.0)
-
+    fill!(ϵbt, 0.0)
+    fill!(κbt, 0.0)
     fill!(ϵb, 0.0)
     fill!(κb, 0.0)
 
     int_f = zeros(Float64, nλl)
-    for iλl in 1:nλl 
+    Threads.@threads for iλl in 1:nλl 
+        tid = Threads.threadid()
+
         iλb = floor(Int64, (λ21[iλl] - λ1) / Dλ * Float64(nλb-1)) + 1
         δiλ = floor(Int64, (ΔλLh[iλl] + ΔλGh[iλl]) * f_Δλ_factor / Δλ)
         iλm = max(1, iλb - δiλ)
@@ -324,10 +321,19 @@ function sum_over_lines!(ϵb, κb, par, λb, linedata_spec)
 
         fb = voigt(λrange, λb[iλb], ΔλLh[iλl], ΔλGh[iλl], fL_adapt, fG_adapt)
 
-        @. κb[iλm:iλp] += @. κ[iλl] * fb
-        @. ϵb[iλm:iλp] += @. ϵ[iλl] * fb
+        #@. κb[iλm:iλp] += @. κ[iλl] * fb
+        #@. ϵb[iλm:iλp] += @. ϵ[iλl] * fb
+
+        @turbo  @. κbt[iλm:iλp,tid] += @. κ[iλl] * fb
+        @turbo  @. ϵbt[iλm:iλp,tid] += @. ϵ[iλl] * fb
 
         int_f[iλl] = sum(fb)*Δλ;
+    end
+
+    nbthreads = Threads.nthreads()
+    for tid in 1:nbthreads
+        @. κb[:] += κbt[:, tid]
+        @. ϵb[:] += ϵbt[:, tid]
     end
 end
 
