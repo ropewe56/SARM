@@ -23,6 +23,9 @@ par[:λmax]    = 18.0e-6
 subdir = "jl_CO2"
 par[:paths] = make_outpaths(subdir);
 
+subdir = "rs_CO2"
+par[:paths] = make_outpaths(subdir);
+
 subdir = "rs_CO2_H2O"
 par[:paths] = make_outpaths(subdir);
 

@@ -52,8 +52,8 @@ keys(f0["results"])
 I0 = f0["results"]["Iλb"]
 
 f1 = load_groups_as_hdf5(h5p2[end])
-λ1 = f1["sarm"]["λ"]
-I1 = f1["sarm"]["I"]
+λ1 = f1["results"]["λb"]
+I1 = f1["results"]["Iλb"]
 
 plt.plot(λ0, I0)
 plt.plot(λ1, I1)
