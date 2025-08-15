@@ -272,9 +272,12 @@ No4
 """
 function compute_lines_emission_and_absorption!(linedata_mat::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
     iλl = argmin(line_data.E1)
+    t1 = time_ns()
     Threads.@threads for iλl in eachindex(line_data.λ210)
         compute_line_emission_and_absorption_iλ(linedata_mat, line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
     end
+    t2 = time_ns()
+    @infoe (t2-t1)*1.0e-9
 end
 
 """

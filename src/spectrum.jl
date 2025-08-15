@@ -171,6 +171,8 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         κbs[spec] = zeros(Float64, nλb)
     end
 
+    ih = 1
+    h = atmosphere.h[ih]
     for (ih,h) in enumerate(atmosphere.h)
         tt = [time_ns()]
         
@@ -260,7 +262,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
         for (i, spec) in enumerate(keys(cihic))
             out = @sprintf("%s, ih = %3d, h = %10.4e, c = %10.4e, I = %10.4e, ϵ = %10.4e, Iκ = %10.4e, ΔλL = %10.4e, ΔλG = %10.4e, T = %10.4e, N = %10.4e",
-                                spec, ih, atmosphere.h[ih], cihic[spec], int_Ij, int_ϵj, int_Iκj, ΔλL_mean[spec], ΔλG_mean[spec], T, N)
+                                spec, ih, atmosphere.h[ih], cihic[spec], int_Ij[1], int_ϵj[1], int_Iκj[1], ΔλL_mean[spec], ΔλG_mean[spec], T, N)
             @infoe out
         end        
         # << 5

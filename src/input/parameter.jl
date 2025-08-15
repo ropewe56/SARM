@@ -65,43 +65,48 @@ function get_parameter()
         :κΔs_limit           => 0.01,
         :Δλb                 => 1.0e-11,
         :f_Δλ_factor         => 10.0,
-        :TQmin               => 200.0,
-        :TQmax               => 300.0,
         :surface_T           => 288.0,
         :background          => 1.0,
         :albedo              => 0.3,
-        :hmin                => 0.0,
-        :hmax                => 70000.0,
-        :dhmin               => 1.0,
-        :dhmax               => 1000.0,
-        :he                  => 1.0,
+
+        :planck_Ts           => [288.0],
+        :θ                   => [0.0],
+
+        :molec_data  => Dict(
+            :TQmin               => 200.0,
+            :TQmax               => 300.0,
+            :species             => [:H2O, :CO2],
+            :c_ppm               => Dict(:CO2 => [1.0,10.0], :H2O => [1.0,10.0]),
+        ),
+
+
+        :hight => Dict(
+            :hmin                => 0.0,
+            :hmax                => 70000.0,
+            :dhmin               => 1.0,
+            :dhmax               => 1000.0,
+            :nh                  => 500,
+            :he                  => 1.0,
+            :hmethod             => :dh,
+            :hout                => [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 7000.0, 10000.0, 20000.0, 40000.0, 70000.0]
+        ),
         
         :nλb                 => 1000000,
-        :nh                  => 500,
         :nc                  => 2,
 
         :T_of_h              => true,
         :N_of_h              => true,
         :integrate           => true,
-
-        :planck_Ts           => [288.0],
-        :θ                   => [0.0],
-
-        :species             => [:H2O, :CO2],
-        :c_ppm               => Dict(:CO2 => [1.0,10.0], :H2O => [1.0,10.0]),
-
         :omit_absorb_emit    => [:omit_none, :omit_emission, :omit_absorption][1],
         :initial_intensity   => :planck,
-        :hmethod             => :dh,
-        :hout                => [0.1, 0.5, 1.0, 10.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 7000.0, 10000.0, 20000.0, 40000.0, 70000.0],
+
         :fL_adapt            => [0, 1, 2, 3][4], # [:none, :scale, :tail, :scaletail][4],
         :fG_adapt            => [0, 1, 2, 3][1], # [:none, :scale, :tail, :scaletail][1],
     )
 end
 
-function parameter_init(par)
+function parameter_init_and_save(par)
     par[:nλb] = floor(Int64, (par[:λmax] - par[:λmin]) / par[:Δλb])
-
     par[:nc] = maximum([length(par[:c_ppm][k]) for k in keys(par[:c_ppm])])
 
     to_json(joinpath(par[:paths][:outroot], "parameter.json"), par)

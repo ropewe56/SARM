@@ -131,11 +131,11 @@ function MolecularData(species, atmosphere, isopath, TQmin, TQmax)
     MolecularData(species, Qref, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
 end
 
-function get_molecular_data(par, atmosphere)
+function get_molecular_data(mdpar, atmosphere)
     datfiles = get_data_files()
     md = Dict{Symbol,MolecularData}()
-    for spec in par[:species]
-        isopath, TQmin, TQmax = datfiles[spec][:Q], par[:TQmin], par[:TQmax]
+    for spec in mdpar[:species]
+        isopath, TQmin, TQmax = datfiles[spec][:Q], mdpar[:TQmin], mdpar[:TQmax]
         md[spec] = MolecularData(spec, atmosphere, isopath, TQmin, TQmax)
     end
     md
@@ -177,6 +177,7 @@ function save_input_to_hdf5(hdf5_path, atmosphere::Atmosphere, molec_data_dict::
     end
 
     save_arrays_to_hdf5(hdf5_path, datasets; fmod="w")
+    nothing
 end
 
 function load_input_from_hdf5(hdf5_path)
