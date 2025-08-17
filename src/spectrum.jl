@@ -155,10 +155,10 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     ih = 1
     spec = :CO2
 
-    linedata_dict = Dict{Symbol,Matrix{Float64}}()
+    linedata_dict = Dict{Symbol,Vector{SVector{13,Float64}}}()
     for spec in par[:species]
         nλl = length(line_data_dict[spec].λ210)
-        linedata_dict[spec] = Matrix{Float64}(undef, 13, nλl)
+        linedata_dict[spec] = Vector{SVector{13,Float64}}(undef, nλl)
     end
     ϵbs = Dict{Symbol, Vector{Float64}}()
     κbs = Dict{Symbol, Vector{Float64}}()
@@ -212,9 +212,10 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
         # << 3
         for spec in par[:species]
-            sum_over_lines!(ϵbt, κbt, ϵbs[spec], κbs[spec], par, λb, linedata_dict[spec])
-            ΔλL_mean[spec] = Statistics.mean(linedata_dict[spec][8,:])
-            ΔλG_mean[spec] = Statistics.mean(linedata_dict[spec][9,:])            
+            linedata = linedata_dict[spec]
+            sum_over_lines!(ϵbt, κbt, ϵbs[spec], κbs[spec], par, λb, linedata)
+            ΔλL_mean[spec] = Statistics.mean([linedata[i][8] for i in eachindex(linedata)])
+            ΔλG_mean[spec] = Statistics.mean([linedata[i][9] for i in eachindex(linedata)])
         end
         # << 3
         push!(tt, time_ns())
@@ -270,6 +271,8 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
         dt = tt[2:end] - tt[1:end-1]
         push!(cputimes, [Float64(x).*1.0e-6 for x in dt])
+
+        #@infoe Float64(tt[end] - tt[1])*1.0e-9
     end  # lop over z ih
     
     CPUt = reduce(hcat, cputimes)' .* 1.0e-3
@@ -277,9 +280,9 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     im = 1
     for im in 1:m2
         tim = CPUt[:,im]
-        @printf("%d : sum = %8.2e s\n", im, sum(tim))
-        #tmin, tmax = extrema(tim)
-        #@printf("%d : sum = %8.2e s, mean = %8.2e s, min = %8.2e s, max = %8.2e s\n", im, sum(tim), Statistics.mean(tim), tmin, tmax)
+        #@printf("%d : sum = %8.2e s\n", im, sum(tim))
+        tmin, tmax = extrema(tim)
+        @printf("%d : sum = %8.2e s, mean = %8.2e s, min = %8.2e s, max = %8.2e s\n", im, sum(tim), Statistics.mean(tim), tmin, tmax)
     end 
     @printf("totalsum= %8.2e s\n", sum(CPUt))
 

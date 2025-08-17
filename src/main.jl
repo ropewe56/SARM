@@ -14,7 +14,7 @@ par[:λmin]    = 12.0e-6
 par[:λmax]    = 18.0e-6
 par[:c_ppm]   = Dict(:H2O => fill(C0H2O_PPM, 2).*PPM, :CO2 => [400.0, 800.0].*PPM)
 
-par[:species] = [:CO2]
+par[:species] = [:CO2, :H2O]
 
 #subdirs = readdir(OUTROOT)
 #rm_subdirs(readdir(OUTROOT)[1:end])
@@ -43,7 +43,6 @@ save_input_to_hdf5(par[:paths][:input_data], atmosphere, molec_data_dict)
 # line data
 renew_hdf5 = false#true
 line_data_dict  = get_line_data(par, molec_data_dict, renew_hdf5=renew_hdf5);
-
 
 result_db = ResultDB(par);
 parameter_init_and_save(par)

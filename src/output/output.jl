@@ -24,7 +24,7 @@ function write_atmosphere_to_hdf5(paths, atm)
     save_groups_as_hdf5(hdf5_path, groups; permute_dims_p=false, extension=".hdf5", script_dir=false)    
 end
 
-function write_results_to_hdf5(paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb, κbs, ϵbs)
+function write_results_to_hdf5(paths, atm, ic, iθ, ih, linedata_dict, λb, Iλb, κb, ϵb, κbs, ϵbs)
     spectrum_name = @sprintf("spectrum_%d_%d_%03d_%07.1f.hdf5", ic, iθ, ih, atm.h[ih])
     hdf5_path = joinpath(paths[:spectrum], spectrum_name)
 
@@ -32,21 +32,23 @@ function write_results_to_hdf5(paths, atm, ic, iθ, ih, ML, λb, Iλb, κb, ϵb,
 
     d = Dict("λ" => λb, "I" => Iλb, "κ" => κb, "ϵ" => ϵb)
     for (spec, val) in κbs
+        linedata = linedata_dict[spec]
+
         ks = @sprintf("κ_%s", spec)
         es = @sprintf("ϵ_%s", spec)
         d[ks] = κbs[spec]
         d[es] = ϵbs[spec]
 
-        sl = @sprintf("Sl_%s", spec)
-        ll = @sprintf("λl_%s", spec)
-        el = @sprintf("ϵl_%s", spec)
-        kl1 = @sprintf("κl1_%s", spec)
-        kl2 = @sprintf("κl2_%s", spec)
-        d[sl] = ML[spec][2,:] 
-        d[ll] = ML[spec][3,:] 
-        d[el] = ML[spec][10,:] 
-        d[kl1] = ML[spec][11,:] 
-        d[kl2] = ML[spec][12,:] 
+        sl     = @sprintf("Sl_%s", spec)
+        ll     = @sprintf("λl_%s", spec)
+        el     = @sprintf("ϵl_%s", spec)
+        kl1    = @sprintf("κl1_%s", spec)
+        kl2    = @sprintf("κl2_%s", spec)
+        d[sl]  = [linedata[i][ 2] for i in eachindex(linedata)]
+        d[ll]  = [linedata[i][ 3] for i in eachindex(linedata)]
+        d[el]  = [linedata[i][10] for i in eachindex(linedata)]
+        d[kl1] = [linedata[i][11] for i in eachindex(linedata)]
+        d[kl2] = [linedata[i][12] for i in eachindex(linedata)]
     end
 
     groups = Dict( "sarm" => d)

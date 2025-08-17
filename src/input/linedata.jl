@@ -1,6 +1,7 @@
 using PhysConst
 using SimpleLog
 using Printf
+using StaticArrays
 using Interpolations
 using DataFrames
 using CSV
@@ -190,7 +191,7 @@ end
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-@inline function compute_line_emission_and_absorption_iλ(linedata_mat::Matrix{Float64}, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+@inline function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
@@ -238,25 +239,20 @@ end
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
     #κ2   = S21 * λ210^2                                               # [1]
 
-#    if iso == 2 && abs(λ210 - 1.50003068e-5) < 1.0e-12 
-#        @infoe @sprintf("λ210 = %14.8e, ϵ = %12.4e, κ = %12.4e, N1 = %12.4e, N2 = %12.4e, ΔλL = %12.4e, ΔλG = %12.4e, iλl = %d", λ210, ϵ, κ, N1, N2, ΔλL, ΔλG, iλl)
-#        @infoe @sprintf("Qiso = %8.2e, miso = %8.2e, aiso = %8.2e, ciso = %8.2e, T = %8.2e, N = %8.2e, p = %8.2e", 
-#            Qiso[iso], miso[iso], aiso[iso], ciso, T, N, p)
-#    end
-
-    linedata_mat[1, iλl] = iso
-    linedata_mat[2, iλl] = miso[iso]
-    linedata_mat[3, iλl] = aiso[iso]
-    linedata_mat[4, iλl] = Qiso[iso]
-    linedata_mat[5, iλl] = S21
-    linedata_mat[6, iλl] = λ21
-    linedata_mat[7, iλl] = γp
-    linedata_mat[8, iλl] = ΔλL
-    linedata_mat[9, iλl] = ΔλG
-    linedata_mat[10, iλl] = N1
-    linedata_mat[11, iλl] = N2
-    linedata_mat[12, iλl] = ϵ
-    linedata_mat[13, iλl] = κ
+    SVector{13, Float64}(
+        Float64(iso),
+        miso[iso],
+        aiso[iso],
+        Qiso[iso],
+        S21,
+        λ21,
+        γp,
+        ΔλL,
+        ΔλG,
+        N1,
+        N2,
+        ϵ,
+        κ)
 end
 
 @doc raw"""
@@ -270,14 +266,11 @@ end
     NCO2 - CO2 concentration
 No4
 """
-function compute_lines_emission_and_absorption!(linedata_mat::Matrix{Float64}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
+function compute_lines_emission_and_absorption!(linedata::Vector{SVector{13, Float64}}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
     iλl = argmin(line_data.E1)
-    t1 = time_ns()
     Threads.@threads for iλl in eachindex(line_data.λ210)
-        compute_line_emission_and_absorption_iλ(linedata_mat, line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+        linedata[iλl] = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
     end
-    t2 = time_ns()
-    @infoe (t2-t1)*1.0e-9
 end
 
 """
@@ -287,7 +280,7 @@ end
     N - density
     ML = ML[:CO2]
 """
-function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata_spec)    
+function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)    
     f_Δλ_factor = par[:f_Δλ_factor]
     fL_adapt    = par[:fL_adapt]
     fG_adapt    = par[:fG_adapt]
@@ -300,17 +293,16 @@ function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata_spec)
 
     # 1    2          3          4          5    6    7   8    9    10  11  12 13
     # iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ 
-    λ21  = linedata_spec[6,:]
-    ΔλLh = linedata_spec[8,:] .* 0.5
-    ΔλGh = linedata_spec[9,:] .* 0.5
-    ϵ    = linedata_spec[12,:]
-    κ    = linedata_spec[13,:]
+
+    λ21  = [linedata[i][6]  for i in eachindex(linedata)]
+    ΔλLh = [linedata[i][8]  for i in eachindex(linedata)] .* 0.5
+    ΔλGh = [linedata[i][9]  for i in eachindex(linedata)] .* 0.5
+    ϵ    = [linedata[i][12] for i in eachindex(linedata)]
+    κ    = [linedata[i][13] for i in eachindex(linedata)]
     nλl  = length(λ21)  
 
     fill!(ϵbt, 0.0)
     fill!(κbt, 0.0)
-    fill!(ϵb, 0.0)
-    fill!(κb, 0.0)
 
     int_f = zeros(Float64, nλl)
     Threads.@threads for iλl in 1:nλl 
@@ -324,15 +316,14 @@ function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata_spec)
 
         fb = voigt(λrange, λb[iλb], ΔλLh[iλl], ΔλGh[iλl], fL_adapt, fG_adapt)
 
-        #@. κb[iλm:iλp] += @. κ[iλl] * fb
-        #@. ϵb[iλm:iλp] += @. ϵ[iλl] * fb
-
         @turbo  @. κbt[iλm:iλp,tid] += @. κ[iλl] * fb
         @turbo  @. ϵbt[iλm:iλp,tid] += @. ϵ[iλl] * fb
 
         int_f[iλl] = sum(fb)*Δλ;
     end
 
+    fill!(ϵb, 0.0)
+    fill!(κb, 0.0)
     nbthreads = Threads.nthreads()
     for tid in 1:nbthreads
         @. κb[:] += κbt[:, tid]
