@@ -2,50 +2,49 @@ using PhysConst
 using SimpleLog
 using LoopVectorization
 
-@inline function adapt_f(λ, λ0, Δλh, f, f_adapt)
-    if f_adapt == :none
-        return f
-    end
-    
-    df = min(f[1], f[end])
-    if f_adapt == :scaletail
-        (f .- df) .* ( 1.0 / (1.0 - df*length(f)/sum(f)) * 0.5*π/max(atan((λ0 - λ[1])/Δλh), atan((λ[end] - λ0)/Δλh)) )
-    elseif  f_adapt == :tail
-        # tail_energy
-        f .* 0.5*π/max(atan((λ0 - λ[1])/Δλh), atan((λ[end] - λ0)/Δλh))
+@inline function adapt_f!(f, λ)
+    imax = argmax(f)
+    Δλ = λ[2] - λ[1]
+    if f[1] < f[end]
+        @. f[:] = f .- f[1]
+        fsum = sum(f[1:imax])*Δλ
+        @. f[:] = f[:] * 0.5/fsum
     else
-        # scale
-        (f .- df) ./ (1.0 - df*length(f)/sum(f))
+        @. f[:] = f .- f[end]
+        fsum = sum(f[imax:end])*Δλ
+        @. f[:] = f[:] * 0.5/fsum
     end
 end
 
-@inline function f_gauss(λ, λ0, ΔλGh, fG_adapt)
+@inline function f_gauss(λ, λ0, ΔλGh)
     a = LOG2/ΔλGh^2
     f = Vector{Float64}(undef, length(λ))
     @turbo for i in eachindex(λ)
         f[i] = sqrt(a/π) * exp(- a * (λ[i] - λ0)^2)
     end
-    #adapt_f(λ, λ0, ΔλGh, f, fG_adapt)
     f
 end
 
-@inline function f_lorentz(λ, λ0, ΔλLh, fL_adapt)
+@inline function f_lorentz(λ, λ0, ΔλLh)
     f = Vector{Float64}(undef, length(λ))
     @turbo for i in eachindex(λ)
         f[i] = 1.0 / (π * ΔλLh * (1.0 + ((λ[i] - λ0)/ΔλLh)^2))
     end
-    #adapt_f(λ, λ0, ΔλLh, f, fL_adapt)
     f
 end
 
-@inline function voigt(λ, λ0, ΔλLh, ΔλGh, fL_adapt, fG_adapt)
-    fL = f_lorentz(λ, λ0, ΔλLh, fL_adapt)
+@inline function voigt(λ, λ0, ΔλLh, ΔλGh, f_adapt)
+    fL = f_lorentz(λ, λ0, ΔλLh)
     v = ΔλLh / ΔλGh
     v = max(0.0, 1.36606 * v - 0.47719 *v^2 + 0.11116 * v^3)
-    if v > 1.0
-        return fL
+    f = if v > 1.0
+        fL
+    else
+        fG = f_gauss(λ, λ0, ΔλGh)
+        @. v * fL + (1.0 - v) * fG
     end
-    fG = f_gauss(λ, λ0, ΔλGh, fG_adapt)
-    @. v * fL + (1.0 - v) * fG
+    if f_adapt
+        adapt_f!(f, λ)
+    end
 end
 

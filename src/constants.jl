@@ -10,7 +10,8 @@ const PPM = 1.0e-6
 const C0H2O_PPM = 7966.0
 const MOLECULE_SYMBOLS = [:H2O, :CO2]
 
-const OUTROOT = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results"
+const RESULT_JL = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/results"
+const RESULT_RS = "/home/wester/Projects/Julia/Climate-Energy/Sarm.rs/results"
 
 const _cm = 1.0e-2
 const _atm = 1.01325e5

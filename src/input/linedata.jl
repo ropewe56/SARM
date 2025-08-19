@@ -191,7 +191,7 @@ end
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
-@inline function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+@inline function compute_line_emission_and_absorption_iλ(line_data::LineData, Qref, Qiso, miso, aiso, cspech, T, N, p, iλl)
     dΩ = 1.0
     β  = 1.0/(c_kB * T)
     βr = 1.0/(c_kB * TREF)
@@ -211,14 +211,15 @@ end
     nair  = line_data.nair[iλl]                                              # 
     δair  = line_data.δair[iλl]                                              # 1 / (m * Pa)
 
-    Niso = ciso * N  * aiso[iso]                                            #  [1/m^3]
+    #      species concentartion at h, isotop abundance, gas density
+    Niso = cspech * aiso[iso] * N                                            #  [1/m^3]
 
     # pressure shift
     λ21 = λ210 / (1.0 + δair * λ210 * p)
 
     # Lorentzian (pressure-broadened) HWHM, γ(p,T) 
     # γpT = (TREF/T)^nair * (γair * (p - pself) + γself*pself)
-    γp = (TREF/T)^nair * (γair * p * (1.0 - ciso) + γself * p * ciso)      # [1/m]
+    γp = (TREF/T)^nair * (γair * p * (1.0 - cspech) + γself * p * cspech)      # [1/m]
     ΔλL = λ21^2 * γp                                                 # [m]
 
     # Doppler broadening
@@ -266,10 +267,11 @@ end
     NCO2 - CO2 concentration
 No4
 """
-function compute_lines_emission_and_absorption!(linedata::Vector{SVector{13, Float64}}, par, line_data::LineData, Qref, Qiso, miso, aiso, ciso, T, N, p)
+function compute_lines_emission_and_absorption!(linedata::Vector{SVector{13, Float64}}, par, line_data::LineData, Qref, Qiso, miso, aiso, cspech, T, N, p)
     iλl = argmin(line_data.E1)
+    iλl = 48512
     Threads.@threads for iλl in eachindex(line_data.λ210)
-        linedata[iλl] = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, aiso, ciso, T, N, p, iλl)
+        linedata[iλl] = compute_line_emission_and_absorption_iλ(line_data, Qref, Qiso, miso, aiso, cspech, T, N, p, iλl)
     end
 end
 
@@ -278,12 +280,11 @@ end
 
     T - temperature
     N - density
-    ML = ML[:CO2]
+    linedata = linedata_dict[spec] 
 """
 function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)    
     f_Δλ_factor = par[:f_Δλ_factor]
-    fL_adapt    = par[:fL_adapt]
-    fG_adapt    = par[:fG_adapt]
+    f_adapt     = par[:f_adapt]
 
     λ1   = λb[1]
     λend = λb[end]
@@ -301,10 +302,12 @@ function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)
     κ    = [linedata[i][13] for i in eachindex(linedata)]
     nλl  = length(λ21)  
 
+    nλl2, nbthreads = size(ϵbt)
+
     fill!(ϵbt, 0.0)
     fill!(κbt, 0.0)
 
-    int_f = zeros(Float64, nλl)
+    int_f = zeros(Float64, nλl, nbthreads)
     Threads.@threads for iλl in 1:nλl 
         tid = Threads.threadid()
 
@@ -314,21 +317,25 @@ function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)
         iλp = min(nλb, iλb + δiλ + 1)
         λrange = @view λb[iλm:iλp]
 
-        fb = voigt(λrange, λb[iλb], ΔλLh[iλl], ΔλGh[iλl], fL_adapt, fG_adapt)
+        fb = voigt(λrange, λb[iλb], ΔλLh[iλl], ΔλGh[iλl], f_adapt)
+        int_f[iλl, tid] = sum(fb)*Δλ;
 
         @turbo  @. κbt[iλm:iλp,tid] += @. κ[iλl] * fb
         @turbo  @. ϵbt[iλm:iλp,tid] += @. ϵ[iλl] * fb
 
-        int_f[iλl] = sum(fb)*Δλ;
+        int_f[iλl, tid] = sum(fb)*Δλ;
     end
 
     fill!(ϵb, 0.0)
     fill!(κb, 0.0)
-    nbthreads = Threads.nthreads()
+    intf = zeros(Float64, nλl)
     for tid in 1:nbthreads
         @. κb[:] += κbt[:, tid]
         @. ϵb[:] += ϵbt[:, tid]
+        @. intf[:] += int_f[:,tid]
     end
+
+    intf
 end
 
 @doc raw"""

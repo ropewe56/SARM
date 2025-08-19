@@ -9,8 +9,8 @@ function new_subdir_path()
     @sprintf("%s", d)
 end
 
-function clear_subdir(subdir)
-    rmpath = @sprintf("%s/*", joinpath(OUTROOT, subdir))
+function clear_subdir(result_root, subdir)
+    rmpath = @sprintf("%s/*", joinpath(result_root, subdir))
     for (root, dirs, files) in walkdir(rmpath)
         for file in files
             if !occursin("", file)
@@ -23,15 +23,15 @@ function clear_subdir(subdir)
 #    run(`bash -c "find $rmpath -type f -exec rm {} \;"`)
 end
 
-function rm_subdirs(subdirs)
+function rm_subdirs(result_root, subdirs)
     for sd in subdirs
-        rmpath = @sprintf("%s", joinpath(OUTROOT, sd))
+        rmpath = @sprintf("%s", joinpath(result_root, sd))
         run(`rm -rf $rmpath`)
     end
 end
 
-function make_outpaths(subdir)
-    root      = joinpath(OUTROOT, subdir)
+function make_outpaths(result_root, subdir)
+    root      = joinpath(result_root, subdir)
     intensity = joinpath(root, "intensity")
     spectrum  = joinpath(root, "spectrum")
     mkpath(root)
@@ -97,17 +97,16 @@ function get_parameter()
         :T_of_h              => true,
         :N_of_h              => true,
         :integrate           => true,
+        :f_adapt             => true,
+
         :omit_absorb_emit    => [:omit_none, :omit_emission, :omit_absorption][1],
         :initial_intensity   => :planck,
-
-        :fL_adapt            => [0, 1, 2, 3][4], # [:none, :scale, :tail, :scaletail][4],
-        :fG_adapt            => [0, 1, 2, 3][1], # [:none, :scale, :tail, :scaletail][1],
     )
 end
 
 function parameter_init_and_save(par)
     par[:nλb] = floor(Int64, (par[:λmax] - par[:λmin]) / par[:Δλb])
-    par[:nc] = maximum([length(par[:c_ppm][k]) for k in keys(par[:c_ppm])])
+    par[:nc] = maximum([length(par[:molec_data][:c_ppm][k]) for k in keys(par[:molec_data][:c_ppm])])
 
     to_json(joinpath(par[:paths][:outroot], "parameter.json"), par)
 end
@@ -154,3 +153,6 @@ end
 
 make_λb(par) = collect(range(par[:λmin], par[:λmax], par[:nλb]))
 
+function show_all_par(par)
+    show(IOContext(stdout, :limit=>false), MIME"text/plain"(), par)
+end

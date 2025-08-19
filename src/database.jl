@@ -23,8 +23,8 @@ function ResultDB(par)
 
     if isfile(dbpath)
         @warne @sprintf("Database %s exists. Will be deleted!", dbpath)
+        cp(dbpath, @sprintf("%s.backup", dbpath), force = true)
         rm(dbpath; force=true)
-        #run(`rm $dbpath`)
     end
     db = SQLite.DB(dbpath)
 

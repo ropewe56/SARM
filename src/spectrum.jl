@@ -125,6 +125,8 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     N_of_h = par[:N_of_h ]
     nλb = length(λb)
 
+    @infoe @sprintf("%14.8e  %14.8e  %14.8e  %14.8e", Δλb, Iλb0[1], Iλb0[end], sum(Iλb0) * Δλb)
+
     Tmin = par[:surface_T]
     Nmin = 1.0e30
 
@@ -152,9 +154,6 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     cputimes = []
     nh = length(atmosphere.h)
 
-    ih = 1
-    spec = :CO2
-
     linedata_dict = Dict{Symbol,Vector{SVector{13,Float64}}}()
     for spec in par[:species]
         nλl = length(line_data_dict[spec].λ210)
@@ -162,6 +161,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     end
     ϵbs = Dict{Symbol, Vector{Float64}}()
     κbs = Dict{Symbol, Vector{Float64}}()
+    intfs = Dict{Symbol, Vector{Float64}}()
     ΔλL_mean = Dict{Symbol, Float64}()
     ΔλG_mean = Dict{Symbol, Float64}()
     κb  = zeros(Float64, nλb)
@@ -172,6 +172,8 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     end
 
     ih = 1
+    spec = :CO2
+
     h = atmosphere.h[ih]
     for (ih,h) in enumerate(atmosphere.h)
         tt = [time_ns()]
@@ -193,19 +195,22 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         # >> 2
         push!(tt, time_ns())
         cihic = Dict{Symbol, Float64}()
-
         for spec in par[:species]
-            cc = par[:c_ppm][spec]
-            md   = molec_data_dict[spec]
-            cihic[spec] = molec_data_dict[spec].cnh[ih] * cc[ic]
+            cc    = par[:molec_data][:c_ppm][spec]
+            md    = molec_data_dict[spec]
+            Qref  = md.Qref
+            Qiso  = md.Qisoh[:,ih]
+            miso  = md.iso_m
+            aiso  = md.iso_a
+            cihic[spec] = md.cnh[ih] * cc[ic]
+            cspech = cihic[spec]
 
             line_data = line_data_dict[spec]
             nλl = length(line_data.λ210)
-            ciso = cihic[spec]
 
             # 1    2          3          4          5    6    7   8    9    10  11  12 13
             # iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ 
-            compute_lines_emission_and_absorption!(linedata_dict[spec], par, line_data, md.Qref, md.Qisoh[:,ih], md.iso_m, md.iso_a, ciso, T, N, p);            
+            compute_lines_emission_and_absorption!(linedata_dict[spec], par, line_data, md.Qref, md.Qisoh[:,ih], md.iso_m, md.iso_a, cspech, T, N, p);            
         end
         # >> 2
         push!(tt, time_ns())
@@ -213,7 +218,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         # << 3
         for spec in par[:species]
             linedata = linedata_dict[spec]
-            sum_over_lines!(ϵbt, κbt, ϵbs[spec], κbs[spec], par, λb, linedata)
+            intfs[spec] = sum_over_lines!(ϵbt, κbt, ϵbs[spec], κbs[spec], par, λb, linedata)
             ΔλL_mean[spec] = Statistics.mean([linedata[i][8] for i in eachindex(linedata)])
             ΔλG_mean[spec] = Statistics.mean([linedata[i][9] for i in eachindex(linedata)])
         end
@@ -243,7 +248,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         push!(tt, time_ns())
 
         hdf5_path = if atmosphere.h_iout[ih] == 1
-            write_results_to_hdf5(par[:paths], atmosphere, ic, iθ, ih, linedata_dict, λb, Iλb, κb, ϵb, κbs, ϵbs)
+            write_results_to_hdf5(par[:paths], atmosphere, ic, iθ, ih, linedata_dict, λb, Iλb, κb, ϵb, κbs, ϵbs, intfs)
         else
             "none"
         end
@@ -262,7 +267,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
                                         int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs)
 
         for (i, spec) in enumerate(keys(cihic))
-            out = @sprintf("%s, ih = %3d, h = %10.4e, c = %10.4e, I = %10.4e, ϵ = %10.4e, Iκ = %10.4e, ΔλL = %10.4e, ΔλG = %10.4e, T = %10.4e, N = %10.4e",
+            out = @sprintf("%s, ih = %3d, h = %10.5e, c = %10.5e, I = %10.5e, ϵ = %10.5e, Iκ = %10.5e, ΔλL = %10.5e, ΔλG = %10.5e, T = %10.5e, N = %10.5e",
                                 spec, ih, atmosphere.h[ih], cihic[spec], int_Ij[1], int_ϵj[1], int_Iκj[1], ΔλL_mean[spec], ΔλG_mean[spec], T, N)
             @infoe out
         end        
