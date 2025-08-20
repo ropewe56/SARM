@@ -8,7 +8,7 @@ using PhysConst
 using SimpleLog
 
 function integrate_results(par, h, θ, T, N, ΔλL_mean, ΔλG_mean, Iλb, ϵb, κb)
-    Δλb =  par[:Δλb]
+    Δλb =  par.w.Δλb
 
     nλb = length(Iλb)
     nspec = length(keys(κb))
@@ -118,21 +118,21 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
     Iλb = copy(Iλb0)
 
-    Δλb = par[:Δλb]
+    Δλb = par.w.Δλb
     nλb = length(λb)
-    surface_T = par[:surface_T]
-    T_of_h = par[:T_of_h ]
-    N_of_h = par[:N_of_h ]
+    surface_T = par.c.surface_T
+    T_of_h = par.r.T_of_h
+    N_of_h = par.r.N_of_h
     nλb = length(λb)
 
     @infoe @sprintf("%14.8e  %14.8e  %14.8e  %14.8e", Δλb, Iλb0[1], Iλb0[end], sum(Iλb0) * Δλb)
 
-    Tmin = par[:surface_T]
+    Tmin = par.c.surface_T
     Nmin = 1.0e30
 
     # >> preallocate ararys
     linedata_dict = Dict{Symbol,Matrix{Float64}}()
-    for spec in par[:species]
+    for spec in par.m.species
         nλl = length(line_data_dict[spec].λ210)
         linedata_dict[spec] = Matrix{Float64}(undef, 13, nλl)
     end
@@ -145,17 +145,16 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     κbt = Matrix{Float64}(undef, nλb, nbthreads)
     ϵbs = Dict{Symbol, Vector{Float64}}()
     κbs = Dict{Symbol, Vector{Float64}}()
-    for spec in par[:species]
+    for spec in par.m.species
         ϵbs[spec] = zeros(Float64, nλb)
         κbs[spec] = zeros(Float64, nλb)
     end
 
-    logfio = open(par[:paths][:logfile], "w")
     cputimes = []
     nh = length(atmosphere.h)
 
     linedata_dict = Dict{Symbol,Vector{SVector{13,Float64}}}()
-    for spec in par[:species]
+    for spec in par.m.species
         nλl = length(line_data_dict[spec].λ210)
         linedata_dict[spec] = Vector{SVector{13,Float64}}(undef, nλl)
     end
@@ -166,7 +165,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
     ΔλG_mean = Dict{Symbol, Float64}()
     κb  = zeros(Float64, nλb)
     ϵb  = zeros(Float64, nλb)
-    for spec in par[:species]
+    for spec in par.m.species
         ϵbs[spec] = zeros(Float64, nλb)
         κbs[spec] = zeros(Float64, nλb)
     end
@@ -195,8 +194,8 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         # >> 2
         push!(tt, time_ns())
         cihic = Dict{Symbol, Float64}()
-        for spec in par[:species]
-            cc    = par[:molec_data][:c_ppm][spec]
+        for spec in par.m.species
+            cc    = par.m.c_ppm[spec]
             md    = molec_data_dict[spec]
             Qref  = md.Qref
             Qiso  = md.Qisoh[:,ih]
@@ -216,7 +215,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         push!(tt, time_ns())
 
         # << 3
-        for spec in par[:species]
+        for spec in par.m.species
             linedata = linedata_dict[spec]
             intfs[spec] = sum_over_lines!(ϵbt, κbt, ϵbs[spec], κbs[spec], par, λb, linedata)
             ΔλL_mean[spec] = Statistics.mean([linedata[i][8] for i in eachindex(linedata)])
@@ -248,7 +247,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         push!(tt, time_ns())
 
         hdf5_path = if atmosphere.h_iout[ih] == 1
-            write_results_to_hdf5(par[:paths], atmosphere, ic, iθ, ih, linedata_dict, λb, Iλb, κb, ϵb, κbs, ϵbs, intfs)
+            write_results_to_hdf5(par.p, atmosphere, ic, iθ, ih, linedata_dict, λb, Iλb, κb, ϵb, κbs, ϵbs, intfs)
         else
             "none"
         end
@@ -263,14 +262,15 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         #int_ϵ  = sum(ϵb)  * Δλb
         #int_Iκ = sum(Iλb .* κb) * Δλb
 
-        insert_into_resultdb(result_db, hdf5_path, ic, iθ, ih, atmosphere.h[ih], θ, T, N, cihic, ΔλL_mean, ΔλG_mean, 
-                                        int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs)
-
         for (i, spec) in enumerate(keys(cihic))
             out = @sprintf("%s, ih = %3d, h = %10.5e, c = %10.5e, I = %10.5e, ϵ = %10.5e, Iκ = %10.5e, ΔλL = %10.5e, ΔλG = %10.5e, T = %10.5e, N = %10.5e",
                                 spec, ih, atmosphere.h[ih], cihic[spec], int_Ij[1], int_ϵj[1], int_Iκj[1], ΔλL_mean[spec], ΔλG_mean[spec], T, N)
             @infoe out
         end        
+
+        insert_into_resultdb(result_db, hdf5_path, ic, iθ, ih, atmosphere.h[ih], θ, T, N, cihic, ΔλL_mean, ΔλG_mean, 
+                                        int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs)
+
         # << 5
         push!(tt, time_ns())
 
@@ -301,8 +301,10 @@ function integrate(par, result_db, λb, Iλb, atmosphere::Atmosphere, molec_data
                         line_data_dict::Dict{Symbol,LineData})
     ic     = 1
     iθ, θ  = 1, 0.0
-    for ic in 1:par[:nc], (iθ, θ) in enumerate(par[:θ])
-        @time integrate_along_path(par, result_db, λb, Iλb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
+    for ic in 1:par.m.nc
+        for (iθ, θ) in enumerate(par.r.θ)
+            @time integrate_along_path(par, result_db, λb, Iλb, atmosphere, molec_data_dict, line_data_dict, ic, iθ, θ);            
+        end
     end
 end
 

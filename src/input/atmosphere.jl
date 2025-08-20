@@ -23,17 +23,17 @@ end
     e
 """
 function make_h_dh(hpar)
-    dh = collect(range(hpar[:dhmin], hpar[:dhmax], hpar[:nh]))
-    dh = dh.^hpar[:he]
+    dh = collect(range(hpar.dhmin, hpar.dhmax, hpar.nh))
+    dh = dh.^hpar.he
     h  = cumsum(dh)
-    h * hpar[:hmax] / maximum(h)
+    h * hpar.hmax / maximum(h)
 end
 
 
 function make_h_exp(hpar)
-    nh = hpar[:nh]
-    he = hpar[:he]
-    dhmin, dhmax, hmin, hmax = hpar[:dhmin], hpar[:dhmax], hpar[:hmin], hpar[:hmax]
+    nh = hpar.nh
+    he = hpar.he
+    dhmin, dhmax, hmin, hmax = hpar.dhmin, hpar.dhmax, hpar.hmin, hpar.hmax
 
     dh = collect(range(dhmin, dhmax, nh))
     dh = dh.^he
@@ -47,9 +47,9 @@ function make_h_exp(hpar)
         h[i] = ho
     end
 
-    h  = collect(range(hmin, hmax, hpar[:nh]))
+    h  = collect(range(hmin, hmax, hpar.nh))
     h = @. exp(h/maximum(h)*e) - 1.0
-    h = h/maximum(h) * hpar[:hmax]
+    h = h/maximum(h) * hpar.hmax
     h
 end
 
@@ -67,20 +67,20 @@ end
 
 """
 function make_h_log10(hpar)
-    log10_h = collect(range(log10(max(1.0e-1, hpar[:xmin])), log10(hpar[:hmax]), hpar[:nh]))
+    log10_h = collect(range(log10(max(1.0e-1, hpar.xmin)), log10(hpar.hmax), hpar.nh))
     h = @. 10^log10_h
     h
 end
 
 function make_h_read(hpar)
-    h = load_array_from_hdf5(hpar[:paths][:hpath])
+    h = load_array_from_hdf5(hpar.paths[:hpath])
     h["z"]
 end
 
 function make_h_equalnum(hpar)
-    np = hpar[:nh]*100
+    np = hpar.nh*100
 
-    h = collect(range(hpar[:hmin], hpar[:hmax], np))
+    h = collect(range(hpar.hmin, hpar.hmax, np))
     p = ip_hp.(h)
     T = ip_hT.(h)
     N = @. p / (c_kB * T)
@@ -98,7 +98,7 @@ function make_h_equalnum(hpar)
     Ni, hi, ip = lininterp(reverse(N3), reverse(h3), np) # knot vectors must be unique and increasing
     # equidistant number of particles within a bin
     x1, x2 = 0.05, 3.0
-    ff = collect(range(x1, 1.0, hpar[:nh])).^x2
+    ff = collect(range(x1, 1.0, hpar.nh)).^x2
     fff = @. (ff - ff[1]) / (ff[end] - ff[1])
     Nii = @. (1.0 - fff) * Ni[1] + fff * Ni[end]
     hii = reverse(ip.(Nii))
@@ -139,21 +139,21 @@ function Atmosphere(hpar)
     T12 = ip_hT.(h1)
     N12 = @. p1 / (c_kB * T12)
 
-    h = if hpar[:he] == :he
+    h = if hpar.he == :he
         make_h_e(hpar)
-    elseif hpar[:hmethod] == :read || hpar[:hmethod] == :read_iz
+    elseif hpar.hmethod == :read || hpar.hmethod == :read_iz
         make_h_read(hpar)
-    elseif hpar[:hmethod] == :exp
+    elseif hpar.hmethod == :exp
         make_h_exp(hpar)
-    elseif hpar[:hmethod] == :log10
+    elseif hpar.hmethod == :log10
         make_h_log10(hpar)
-    elseif hpar[:hmethod] == :dh
+    elseif hpar.hmethod == :dh
         make_h_dh(hpar)
-    elseif hpar[:hmethod] == :equalnumber
+    elseif hpar.hmethod == :equalnumber
         make_h_equalnum(hpar)
     end
 
-    hout = hpar[:hout]
+    hout = hpar.hout
     h_iout = if length(hout) > 2
         h_iout = zeros(Int64, length(h))
         for ho in hout

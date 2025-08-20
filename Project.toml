@@ -22,6 +22,7 @@ SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
 SimpleLog = "335c5bdd-21de-445d-a049-feb868b1bf7c"
 SpecialFileIO = "33f08be4-984f-4f9d-9dd0-18a0be18772f"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+StructTypes = "856f2bd8-1eba-4b0a-8007-ebc267875bd4"
 
 [compat]
 CPUTime = "1.0.0"
@@ -39,3 +40,4 @@ Printf = "1.11.0"
 PyPlot = "2.11.6"
 SQLite = "1.6.1"
 StaticArrays = "1.9.13"
+StructTypes = "1.11.0"

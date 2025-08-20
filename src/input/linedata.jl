@@ -283,8 +283,8 @@ end
     linedata = linedata_dict[spec] 
 """
 function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)    
-    f_Δλ_factor = par[:f_Δλ_factor]
-    f_adapt     = par[:f_adapt]
+    f_Δλ_factor = par.r.f_Δλ_factor
+    f_adapt     = par.r.f_adapt
 
     λ1   = λb[1]
     λend = λb[end]
@@ -308,6 +308,7 @@ function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)
     fill!(κbt, 0.0)
 
     int_f = zeros(Float64, nλl, nbthreads)
+    iλl = 50000
     Threads.@threads for iλl in 1:nλl 
         tid = Threads.threadid()
 
@@ -344,8 +345,8 @@ end
     $k >> 1: I = I(0) + ϵ / κ$
 """
 function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κb::Vector{Float64}, ϵb::Vector{Float64},  Δs::Float64, par)
-    κΔs_limit     = par[:κΔs_limit]
-    omit_absorb_emit = par[:omit_absorb_emit]
+    κΔs_limit        = par.r.κΔs_limit
+    omit_absorb_emit = par.r.omit_absorb_emit
 
     #plt.plot(Iλb)
 
@@ -354,7 +355,7 @@ function integrate_intensity_over_Δs(Iλb::Vector{Float64}, κb::Vector{Float64
         exp_κΔs = exp.(-κbΔs)
         Iλb[:] = @. ifelse(κbΔs < κΔs_limit, 
                         Iλb .* exp_κΔs .+ ϵb.*Δs, 
-                        Iλb .* exp_κΔs .+ ϵb./κb.*(1.0 .- exp_κΔs))
+                        Iλb .* exp_κΔs .+ ϵb ./ κb.*(1.0 .- exp_κΔs))
     elseif omit_absorb_emit == :omit_emission
         Iλb[:] = @. Iλb + ϵb*Δs
     else omit_absorb_emit == :emission_absorption
@@ -388,19 +389,20 @@ end
 species = :H2O
 moleculardata = molec_data_dict[species]
 """
-function get_species_line_data(par, species, moleculardata; renew_hdf5=false)
+function get_species_line_data(par, spec, moleculardata; renew_hdf5=false)
     datfiles = get_data_files()
     if renew_hdf5
-        hitran_to_hdf5(species, datfiles[species][:csv], datfiles[species][:hdf5], datfiles[species][:hdf5_compact], par[:λmin], par[:λmax], length(moleculardata.iso_a))
+        hitran_to_hdf5(spec, datfiles[spec][:csv], datfiles[spec][:hdf5], datfiles[spec][:hdf5_compact], par.w.λmin, par.w.λmax, length(moleculardata.iso_a))
     end
-    line_data = LineData(datfiles[species][:hdf5_compact]);
+    hdf5_path = datfiles[spec][:hdf5_compact]
+    line_data = LineData(hdf5_path);
     line_data
 end
 
 function get_line_data(par, molec_data_dict; renew_hdf5=false)
     line_data_dict = Dict{Symbol,LineData}()
-    for species in par[:species]
-        line_data_dict[species] = get_species_line_data(par, species, molec_data_dict[species]; renew_hdf5=renew_hdf5)
+    for spec in par.m.species
+        line_data_dict[spec] = get_species_line_data(par, spec, molec_data_dict[spec]; renew_hdf5=renew_hdf5)
     end
     line_data_dict
 end

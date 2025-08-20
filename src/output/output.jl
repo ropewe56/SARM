@@ -26,7 +26,7 @@ end
 
 function write_results_to_hdf5(paths, atm, ic, iθ, ih, linedata_dict, λb, Iλb, κb, ϵb, κbs, ϵbs, intfs)
     spectrum_name = @sprintf("spectrum_%d_%d_%03d_%07.1f.hdf5", ic, iθ, ih, atm.h[ih])
-    hdf5_path = joinpath(paths[:spectrum], spectrum_name)
+    hdf5_path = joinpath(paths.spectrum, spectrum_name)
 
     # linedata
     # 1             2          3          4          5    6    7   8    9    10  11  12 13

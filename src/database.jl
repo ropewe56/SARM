@@ -19,7 +19,7 @@ function list_to_string(lst)
 end
 
 function ResultDB(par)
-    dbpath = par[:paths][:dbpath]
+    dbpath = par.p.dbpath
 
     if isfile(dbpath)
         @warne @sprintf("Database %s exists. Will be deleted!", dbpath)
@@ -31,7 +31,7 @@ function ResultDB(par)
     colnames = ["hdf5_path", "ic", "iθ", "ih", "h", "θ",  "T",  "N", "cCO2", "int_I", "int_ϵ", "int_Iκ", "species"]
     coltypes = [String, Int,  Int,   Int, Real, Real, Real,  Real, Real, Real, Real, Real,  Real, String]
     
-    species = par[:species]
+    species = par.m.species
     for spec in species
         colnames = cat(colnames, ["cih$spec", "ΔλL$spec", "ΔλD$spec", "int_ϵs$spec", "int_Iκs$spec", "mean_κs$spec"], dims=1)
         coltypes = cat(coltypes, [Real, Real, Real, Real, Real, Real], dims=1)

@@ -131,11 +131,11 @@ function MolecularData(species, atmosphere, isopath, TQmin, TQmax)
     MolecularData(species, Qref, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
 end
 
-function get_molecular_data(mdpar, atmosphere)
+function get_molecular_data(mpar, atmosphere)
     datfiles = get_data_files()
     md = Dict{Symbol,MolecularData}()
-    for spec in mdpar[:species]
-        isopath, TQmin, TQmax = datfiles[spec][:Q], mdpar[:TQmin], mdpar[:TQmax]
+    for spec in mpar.species
+        isopath, TQmin, TQmax = datfiles[spec][:Q], mpar.TQmin, mpar.TQmax
         md[spec] = MolecularData(spec, atmosphere, isopath, TQmin, TQmax)
     end
     md
