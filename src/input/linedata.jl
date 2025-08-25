@@ -6,6 +6,8 @@ using Interpolations
 using DataFrames
 using CSV
 using LoopVectorization
+using Bumper
+
 
 @inline function S_T(S21r, E1, E2, β, βr, QT, QTr)
     ΔE21 = E2-E1
@@ -29,6 +31,10 @@ struct LineData
     γself :: Vector{Float64} # at TREF
     nair  :: Vector{Float64}
     δair  :: Vector{Float64} # at TREF
+end
+
+function get_nλl(ld::LineData)
+    length(ld.A21)
 end
 
 function load_hitran_data(hitran_out, λmin, λmax, iso_max)
@@ -278,18 +284,15 @@ end
 """
     sum over all lines using their line shape
 
-    T - temperature
-    N - density
     linedata = linedata_dict[spec] 
 """
-function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)    
+function sum_over_lines!(par, λb, linedata, ϵbt, κbt, ϵb, κb, int_f, int_ft, pr::Profile)
+
     f_Δλ_factor = par.r.f_Δλ_factor
     f_adapt     = par.r.f_adapt
 
-    λ1   = λb[1]
-    λend = λb[end]
-    Dλ   = λend - λ1
-    Δλ   = λb[2] - λ1
+    Dλ   = λb[end] - λb[1]
+    Δλ   = λb[2]   - λb[1]
     nλb  = length(λb)
 
     # 1    2          3          4          5    6    7   8    9    10  11  12 13
@@ -302,41 +305,57 @@ function sum_over_lines!(ϵbt, κbt, ϵb, κb, par, λb, linedata)
     κ    = [linedata[i][13] for i in eachindex(linedata)]
     nλl  = length(λ21)  
 
-    nλl2, nbthreads = size(ϵbt)
-
-    fill!(ϵbt, 0.0)
-    fill!(κbt, 0.0)
-
-    int_f = zeros(Float64, nλl, nbthreads)
-    iλl = 50000
+    nthreads = Threads.nthreads()
+    for i in eachindex(ϵbt)
+        fill!(ϵbt[i], 0.0)
+        fill!(κbt[i], 0.0)
+    end
+    
+    nthreads = Threads.nthreads()
+    nf = floor(Int64, maximum((ΔλLh + ΔλGh)) * f_Δλ_factor / Δλ) * 2 + 10
+    update_profile(pr, nf, nthreads, nλl)
+    
     Threads.@threads for iλl in 1:nλl 
         tid = Threads.threadid()
 
-        iλb = floor(Int64, (λ21[iλl] - λ1) / Dλ * Float64(nλb-1)) + 1
+        iλb = floor(Int64, (λ21[iλl] - λb[1]) / Dλ * Float64(nλb-1)) + 1
         δiλ = floor(Int64, (ΔλLh[iλl] + ΔλGh[iλl]) * f_Δλ_factor / Δλ)
         iλm = max(1, iλb - δiλ)
         iλp = min(nλb, iλb + δiλ + 1)
+
         λrange = @view λb[iλm:iλp]
+        nλrange = length(λrange)
+        if nf < nλrange
+            @infoe iλl, nf, nλrange
+        end
+        
+        ft = pr.ft[tid]
+        voigt!(ft, λrange, λb[iλb], ΔλLh[iλl], ΔλGh[iλl], f_adapt)
+        int_ft[tid][iλl] = sum(ft[1:nλrange])*Δλ;
 
-        fb = voigt(λrange, λb[iλb], ΔλLh[iλl], ΔλGh[iλl], f_adapt)
-        int_f[iλl, tid] = sum(fb)*Δλ;
-
-        @turbo  @. κbt[iλm:iλp,tid] += @. κ[iλl] * fb
-        @turbo  @. ϵbt[iλm:iλp,tid] += @. ϵ[iλl] * fb
-
-        int_f[iλl, tid] = sum(fb)*Δλ;
+        @turbo for iλ in iλm:iλp 
+            jλ = iλ-iλm+1
+            ϵbt[tid][iλ] = ϵbt[tid][iλ] + ft[jλ] * ϵ[iλl]
+        end
+        @turbo for iλ in iλm:iλp 
+            jλ = iλ-iλm+1
+            κbt[tid][iλ] = κbt[tid][iλ] + ft[jλ] * κ[iλl]
+        end
     end
 
     fill!(ϵb, 0.0)
     fill!(κb, 0.0)
-    intf = zeros(Float64, nλl)
-    for tid in 1:nbthreads
-        @. κb[:] += κbt[:, tid]
-        @. ϵb[:] += ϵbt[:, tid]
-        @. intf[:] += int_f[:,tid]
+    for tid in 1:nthreads
+        @. ϵb[:] += ϵbt[tid][:]
+        @. κb[:] += κbt[tid][:]
     end
 
-    intf
+    fill!(int_f, 0.0)
+    for tid in 1:nthreads
+        for iλl in 1:nλl 
+            int_f[iλl] += int_ft[tid][iλl]
+        end
+    end
 end
 
 @doc raw"""

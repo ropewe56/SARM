@@ -106,6 +106,7 @@ function integrated_results(λb, Iλb, ϵb, κb, ϵbs, κbs)
 end
 
 
+
 """
     integrate_along_path(par, atm, moleculardata, linedata, ch0, ic, iθ, θ)
 
@@ -118,61 +119,26 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
     Iλb = copy(Iλb0)
 
-    Δλb = par.w.Δλb
     nλb = length(λb)
-    surface_T = par.c.surface_T
-    T_of_h = par.r.T_of_h
-    N_of_h = par.r.N_of_h
-    nλb = length(λb)
+    pa = PreAlloc(par, line_data_dict, nλb);
 
+    Δλb       = par.w.Δλb
+    surface_T = par.c.surface_T
+    T_of_h    = par.r.T_of_h
+    N_of_h    = par.r.N_of_h
     @infoe @sprintf("%14.8e  %14.8e  %14.8e  %14.8e", Δλb, Iλb0[1], Iλb0[end], sum(Iλb0) * Δλb)
 
     Tmin = par.c.surface_T
     Nmin = 1.0e30
-
-    # >> preallocate ararys
-    linedata_dict = Dict{Symbol,Matrix{Float64}}()
-    for spec in par.m.species
-        nλl = length(line_data_dict[spec].λ210)
-        linedata_dict[spec] = Matrix{Float64}(undef, 13, nλl)
-    end
     ΔλL_mean = Dict{Symbol, Float64}()
     ΔλG_mean = Dict{Symbol, Float64}()
-    ϵb  = zeros(Float64, nλb)
-    κb  = zeros(Float64, nλb)
-    nbthreads = Threads.nthreads()
-    ϵbt = Matrix{Float64}(undef, nλb, nbthreads)
-    κbt = Matrix{Float64}(undef, nλb, nbthreads)
-    ϵbs = Dict{Symbol, Vector{Float64}}()
-    κbs = Dict{Symbol, Vector{Float64}}()
-    for spec in par.m.species
-        ϵbs[spec] = zeros(Float64, nλb)
-        κbs[spec] = zeros(Float64, nλb)
-    end
-
-    cputimes = []
-    nh = length(atmosphere.h)
-
-    linedata_dict = Dict{Symbol,Vector{SVector{13,Float64}}}()
-    for spec in par.m.species
-        nλl = length(line_data_dict[spec].λ210)
-        linedata_dict[spec] = Vector{SVector{13,Float64}}(undef, nλl)
-    end
-    ϵbs = Dict{Symbol, Vector{Float64}}()
-    κbs = Dict{Symbol, Vector{Float64}}()
-    intfs = Dict{Symbol, Vector{Float64}}()
-    ΔλL_mean = Dict{Symbol, Float64}()
-    ΔλG_mean = Dict{Symbol, Float64}()
-    κb  = zeros(Float64, nλb)
-    ϵb  = zeros(Float64, nλb)
-    for spec in par.m.species
-        ϵbs[spec] = zeros(Float64, nλb)
-        κbs[spec] = zeros(Float64, nλb)
-    end
 
     ih = 1
     spec = :CO2
 
+    cputimes = []
+
+    nh = length(atmosphere.h)
     h = atmosphere.h[ih]
     for (ih,h) in enumerate(atmosphere.h)
         tt = [time_ns()]
@@ -209,17 +175,20 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
             # 1    2          3          4          5    6    7   8    9    10  11  12 13
             # iso, miso[iso], aiso[iso], Qiso[iso], S21, λ21, γp, ΔλL, ΔλG, N1, N2, ϵ, κ 
-            compute_lines_emission_and_absorption!(linedata_dict[spec], par, line_data, md.Qref, md.Qisoh[:,ih], md.iso_m, md.iso_a, cspech, T, N, p);            
+            compute_lines_emission_and_absorption!(pa.linedata_dict[spec], par, line_data, md.Qref, md.Qisoh[:,ih], md.iso_m, md.iso_a, cspech, T, N, p);            
         end
         # >> 2
         push!(tt, time_ns())
 
         # << 3
         for spec in par.m.species
-            linedata = linedata_dict[spec]
-            intfs[spec] = sum_over_lines!(ϵbt, κbt, ϵbs[spec], κbs[spec], par, λb, linedata)
+            linedata = pa.linedata_dict[spec]                                            
             ΔλL_mean[spec] = Statistics.mean([linedata[i][8] for i in eachindex(linedata)])
             ΔλG_mean[spec] = Statistics.mean([linedata[i][9] for i in eachindex(linedata)])
+        end
+        for spec in par.m.species
+            linedata = pa.linedata_dict[spec]                                            
+            sum_over_lines!(par, λb, linedata, pa.ϵbt, pa.κbt, pa.ϵbs[spec], pa.κbs[spec], pa.int_fs[spec], pa.int_fst[spec], pa.pr)
         end
         # << 3
         push!(tt, time_ns())
@@ -234,20 +203,20 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
         # add species ϵ, κ
         nλb = length(Iλb)
-        fill!(ϵb, 0.0)
-        fill!(κb, 0.0)
-        for (k, val) in ϵbs
-            @. ϵb += val
+        fill!(pa.ϵb, 0.0)
+        fill!(pa.κb, 0.0)
+        for (k, val) in pa.ϵbs
+            @. pa.ϵb += val
         end
-        for (k, val) in κbs
-            @. κb += val
+        for (k, val) in pa.κbs
+            @. pa.κb += val
         end
 
-        integrate_intensity_over_Δs(Iλb, κb, ϵb, Δs, par)
+        integrate_intensity_over_Δs(Iλb, pa.κb, pa.ϵb, Δs, par)
         push!(tt, time_ns())
 
         hdf5_path = if atmosphere.h_iout[ih] == 1
-            write_results_to_hdf5(par.p, atmosphere, ic, iθ, ih, linedata_dict, λb, Iλb, κb, ϵb, κbs, ϵbs, intfs)
+            write_results_to_hdf5(par.p, atmosphere, ic, iθ, ih, pa.linedata_dict, λb, Iλb, pa.κb, pa.ϵb, pa.κbs, pa.ϵbs, pa.int_fs)
         else
             "none"
         end
@@ -256,7 +225,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
 
         # >> 5
         # add results
-        int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs = integrated_results(λb, Iλb, ϵb, κb, ϵbs, κbs)        
+        int_Ij, int_ϵj, int_Iκj, int_ϵs, mean_κs, int_Iκs = integrated_results(λb, Iλb, pa.ϵb, pa.κb, pa.ϵbs, pa.κbs)        
 
         #int_I  = sum(Iλb) * Δλb
         #int_ϵ  = sum(ϵb)  * Δλb

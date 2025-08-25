@@ -59,9 +59,8 @@ jl_rs = "rs"
 
 subdir, par, result_db, λb, Iλb0, atmosphere, molec_data_dict, line_data_dict = init_sarm(species, jl_rs);
 
-
-#start_rust(subdir)
-
 integrate(par, result_db, λb, Iλb0, atmosphere, molec_data_dict, line_data_dict)
 
-show_all_par(par)
+#show_all_par(par)
+#start_rust(subdir)
+
