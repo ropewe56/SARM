@@ -64,3 +64,4 @@ integrate(par, result_db, λb, Iλb0, atmosphere, molec_data_dict, line_data_dic
 #show_all_par(par)
 #start_rust(subdir)
 
+#julia --optimize=3 --inline=yes --check-bounds=no --math-mode=fast --threads=10 src/main.jl
