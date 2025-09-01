@@ -17,6 +17,9 @@ function init_sarm(species, jl_rs)
         RESULT_RS
     end
 
+    dbpath = joinpath(dirname(@__DIR__), "data", "MolecularData.db")
+    db = SQLite.DB(dbpath)
+
     par = SarmParameter();
 
     par.r.θ         = deg2rad.([0.0]) # , 40.0, 80.0
@@ -36,7 +39,7 @@ function init_sarm(species, jl_rs)
 
     # input data
     atmosphere      = Atmosphere(par.h);
-    molec_data_dict = get_molecular_data(par.m, atmosphere);
+    molec_data_dict = get_molecular_data(db, par.m, atmosphere);
     # save input data
     save_input_to_hdf5(par.p.input_data, atmosphere, molec_data_dict)
 

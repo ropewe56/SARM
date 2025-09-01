@@ -45,7 +45,6 @@ struct MolecularData
     iso_id   :: Vector{Int64}
     iso_a    :: Vector{Float64}
     iso_m    :: Vector{Float64}
-    gj       :: Vector{Int64}
 end
 
 function get_sorted_q_files(root)
@@ -97,47 +96,38 @@ end
     n  -- number of T,Q pairs to make
     returns T, Q -- [description]
 """
-function MolecularData(species, atmosphere, isopath, TQmin, TQmax)
-    iso_id, iso_a, iso_m, gj, qpaths = load_Isotope_file(isopath)        
-    niso = min(length(iso_id), length(qpaths))
+function MolecularData(db, par, spec, atmosphere)
+    table_iso = @sprintf("%s_iso", spec)
+    df_iso = DBInterface.execute(db, "SELECT * FROM $table_iso;") |> DataFrame
+    iso_id = df_iso[!,:iso_id]
+    iso_a = df_iso[!,:aiso]
+    iso_m = df_iso[!,:misos]
+
+    table_TQ = @sprintf("%s_TQ", spec)
+    TQmin, TQmax = par.m.TQmin, par.m.TQmax
+    df_TQ = DBInterface.execute(db, "SELECT * FROM $table_TQ WHERE T >= $TQmin AND T <= $TQmax;") |> DataFrame
+
     Qhiso = []
     Qref = []
-    # read the partition function files
-    i = 1
-    for i in 1:niso
-        fpath = joinpath(dirname(isopath), qpaths[i])        
-        T = []
-        Q = []
-        open(fpath, "r") do io
-            lines = readlines(io)
-            for line in lines
-                spl0 = split(line, " ")
-                spl = filter(x -> x != "", spl0)
-                push!(T, parse(Float64, spl[1]))
-                push!(Q, parse(Float64, spl[2]))
-            end
-        end   
-        index = @. ifelse(T >= TQmin && T <= TQmax, true, false)
-        T = T[index]
-        Q = Q[index]
+    cols = SQLite.columns(db, table_TQ)
+    T = df_TQ[!,"T"]
+    for i in 2:length(cols.name)
+        Q = df_TQ[!,i]
         lip = linear_interpolation(T, Q, extrapolation_bc = Line())
         Q = lip.(atmosphere.T)
         push!(Qhiso, Q)
         push!(Qref, lip(TREF))
     end
     Qisoh = reduce(hcat, Qhiso)'
-    cnh = get_normalized_molecule_concentration_over_h(species, atmosphere.h)
+    cnh = get_normalized_molecule_concentration_over_h(spec, atmosphere.h)
     
-    MolecularData(species, Qref, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
+    MolecularData(spec, Qref, Qisoh, cnh, iso_id, iso_a, iso_m)
 end
-mpar = par.m
-spec = :CO2
-function get_molecular_data(mpar, atmosphere)
-    datfiles = get_data_files()
+
+function get_molecular_data(db, par, atmosphere)
     md = Dict{Symbol,MolecularData}()
-    for spec in mpar.species
-        isopath, TQmin, TQmax = datfiles[spec][:Q], mpar.TQmin, mpar.TQmax
-        md[spec] = MolecularData(spec, atmosphere, isopath, TQmin, TQmax)
+    for spec in par.m.species
+        md[spec] = MolecularData(db, par, spec, atmosphere)
     end
     md
 end
