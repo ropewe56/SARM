@@ -130,7 +130,8 @@ function MolecularData(species, atmosphere, isopath, TQmin, TQmax)
     
     MolecularData(species, Qref, Qisoh, cnh, iso_id, iso_a, iso_m, gj)
 end
-
+mpar = par.m
+spec = :CO2
 function get_molecular_data(mpar, atmosphere)
     datfiles = get_data_files()
     md = Dict{Symbol,MolecularData}()
@@ -158,14 +159,15 @@ function save_input_to_hdf5(hdf5_path, atmosphere::Atmosphere, molec_data_dict::
     #gj       :: Vector{Int64}
 
     datasets = Dict()
+    db_path
+    dbpath = joinpath(@__DIR__, "inputdata.db")
+    db = SQLite.DB(dbpath)
 
-    datasets["atmosphere"] = (("h_iout", atmosphere.h_iout), 
-                              ("h"     , atmosphere.h), 
-                              ("p"     , atmosphere.p), 
-                              ("T"     , atmosphere.T), 
-                              ("N"     , atmosphere.N))
+    df_at = DataFrame(h_iout = atmosphere.h_iout, h = atmosphere.h, p = atmosphere.p, T = atmosphere.T, N = atmosphere.N)
+    SQLite.load!(df2, db, "hihpTN")
 
     for (spec, md) in molec_data_dict
+        df = 
         datasets[String(spec)] = (
             ("Qref"  , md.Qref), 
             ("Qisoh" , md.Qisoh), 

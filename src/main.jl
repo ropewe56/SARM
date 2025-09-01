@@ -55,7 +55,7 @@ function init_sarm(species, jl_rs)
 end
 
 species = [:CO2,:H2O]
-jl_rs = "rs"
+jl_rs = "jl"
 
 subdir, par, result_db, λb, Iλb0, atmosphere, molec_data_dict, line_data_dict = init_sarm(species, jl_rs);
 
