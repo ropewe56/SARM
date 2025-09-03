@@ -63,7 +63,6 @@ function make_outpaths(result_root, subdir)
             linedata_path)
 end
 
-
 @kwdef mutable struct Wavelength
     λmin :: Float64 = 12.0e-6
     λmax :: Float64 = 18.0e-6
@@ -121,32 +120,6 @@ function rm_subdirs(result_root, subdirs)
         rmpath = @sprintf("%s", joinpath(result_root, sd))
         run(`rm -rf $rmpath`)
     end
-end
-
-function make_outpaths(result_root, subdir)
-    root      = joinpath(result_root, subdir)
-    intensity = joinpath(root, "intensity")
-    spectrum  = joinpath(root, "spectrum")
-    mkpath(root)
-    mkpath(intensity)
-    mkpath(spectrum)
-
-    projroot = "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl"
-    molecdata_path = joinpath(projroot, "results", subdir, "input_data.hdf5")
-    linedata_path  = Dict(  "CO2" => joinpath(projroot, "data/CO2/CO2_rwfmt.hdf5"), 
-                            "H2O" => joinpath(projroot, "data/H2O/H2O_rwfmt.hdf5"))
-
-    Paths(  root,
-            intensity,
-            spectrum,
-            joinpath(root, "log.out"),
-            joinpath(root, "db.sqlite3"),
-            joinpath(intensity, "planck_single.hdf5"),
-            joinpath(intensity, "planck_multi.hdf5"),
-            joinpath(intensity, "initial_intensity.hdf5"),
-            joinpath(root, "input_data.hdf5"),
-            molecdata_path,
-            linedata_path)
 end
 
 

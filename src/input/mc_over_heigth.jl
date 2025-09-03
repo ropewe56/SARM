@@ -35,13 +35,13 @@ end
 """
     get_normalized_molcule_concentration_over_h(molecule, hi)
 """
-function get_normalized_molecule_concentration_over_h(species, hi)
-    ci = if species == :H2O
+function get_normalized_molecule_concentration_over_h(spec, hi)
+    ci = if spec == :H2O || spec == "H2O"
         H2O_normalized_concentration_over_h(hi)
-    elseif species == :CO2
+    elseif spec == :CO2 || spec == "CO2"
         CO2_normalized_concentration_over_h(hi)
     else
-        @error species, "not implemented"
+        @error spec, "not implemented"
     end
     ci
 end

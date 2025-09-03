@@ -10,29 +10,39 @@ function to_MKS(df)
     atm   = 1.01325e5
 
     iso_id = df[!,:local_iso_id]
-    λ21   = cm ./ (df[!,"nu"])
+    λ21   = cm ./ (df[!,:nu])
     S21r  = df[!,:sw] .* cm 
-    A     = df[!,:a]
+    A21   = df[!,:a]
     γair  = df[!,:gamma_air]  ./ (cm * atm)
     γself = df[!,:gamma_self] ./ (cm * atm)
-    E1    = (hc * cm) .* (df[!,:elower])
+    E1    = hc/cm .* (df[!,:elower]) 
     nair  = df[!,:n_air]
     δair  = df[!,:delta_air]  ./ (cm * atm)
     g2    = df[!,:gp]
     g1    = df[!,:gpp]
 
-    colnames = ["iso_id", "λ21", "S21r", "A21", "γair", "γself", "E1", "nair", "δair", "g2", "g1"]
+    ΔE21  = c_h*c_c ./ λ21
+    E2    = E1 .+ ΔE21
+
+    B21 = @. A21 * λ21^3 / (8π * c_h) # [m^3 / s / Js] = [m^3 / J / s^2]
+    B12 = @. g2 / g1 * B21;
+
+    colnames = ["iso_id", "λ21", "S21r", "A21", "γair", "γself", "E1", "nair", "δair", "g2", "g1", "ΔE21", "E2", "B21", "B12"]
     values =   [ iso_id, 
                  λ21, 
                  S21r,
-                 A,
+                 A21,
                  γair ,
                  γself,
                  E1   ,
                  nair ,
                  δair ,
                  g2   ,
-                 g1   ]
+                 g1   ,
+                 ΔE21,
+                 E2,
+                 B21,
+                 B12]
 
     df2 = DataFrame(colnames .=> values)
     sort!(df2, [:λ21]);
@@ -86,7 +96,7 @@ function molec_data_to_db!(db, molec)
         miso = df_qq[:,Symbol("MolarMass/g·mol-1")] .* mass_factor
         aiso = df_qq.Abundance 
         iso_id = df_qq.localID
-        DataFrame(iso_id = iso_id, aiso = aiso, misos = miso)
+        DataFrame(iso_id = iso_id, aiso = aiso, miso = miso)
     else
         df = CSV.read(joinpath(root, @sprintf("%s_Isotopes.txt", molec)), DataFrame)
         DataFrame(iso_id = collect(1:nrow(df)), aiso = df.IsoAbundance, miso=df[!,Symbol("MolarMass(g)")] .* mass_factor)
@@ -141,4 +151,4 @@ function raw_data_to_db()
         line_data_db!(db, molec)
     end
 end
-#raw_data_to_db()
+raw_data_to_db()

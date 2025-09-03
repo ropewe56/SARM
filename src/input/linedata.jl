@@ -15,7 +15,7 @@ using Bumper
 end
 
 struct LineData
-    species :: Symbol
+    spec  :: Symbol
     iso   :: Vector{Int64}
     λ210  :: Vector{Float64}
     ΔE21  :: Vector{Float64}
@@ -194,6 +194,45 @@ function LineData(hdf5_path)
     ld
 end
 
+function LineData(db, spec, λmin, λmax)    
+    table = @sprintf("%s_linedata", spec)
+    linedata = DBInterface.execute(db, "SELECT * FROM $table WHERE λ21 >= $λmin AND λ21 <= $λmax") |> DataFrame 
+
+    iso   = linedata[!,:iso_id]
+    λ210  = linedata[!,:λ21]
+    S21r  = linedata[!,:S21r]
+    A21   = linedata[!,:A21]
+    γair  = linedata[!,:γair]
+    γself = linedata[!,:γself]
+    E1    = linedata[!,:E1]
+    nair  = linedata[!,:nair]
+    δair  = linedata[!,:δair]
+    g2    = linedata[!,:g2]
+    g1    = linedata[!,:g1]
+    ΔE21  = linedata[!,:ΔE21]
+    E2    = linedata[!,:E2  ]
+    B21   = linedata[!,:B21 ]
+    B12   = linedata[!,:B12 ]
+
+    ld = LineData(  spec  ,
+                    iso   ,
+                    λ210  ,
+                    ΔE21  ,
+                    E1    ,
+                    E2    ,
+                    A21   ,
+                    B21   ,
+                    B12   ,
+                    g2    ,
+                    g1    ,
+                    S21r  ,
+                    γair  ,
+                    γself ,
+                    nair  ,
+                    δair  )
+    ld
+end
+
 """
     compute_line_emission_and_absorption_iλ(ld::LineData, Qref, Qiso, miso, c, T, N, p, iλ)
 """
@@ -246,6 +285,11 @@ end
     S21  = S_T(S21r, E1, E2, β, βr, Qiso[iso], Qref[iso]) * Niso      # [1/m^2]  
     #κ2   = S21 * λ210^2                                               # [1]
 
+    #if abs(λ21 - 1.50357123955641e-05) < 1.0e-12
+    #    @infoe iso, λ21, A21, ϵ, κ, E1, E2, Niso, N, N1, N2, Qiso[iso], miso[iso], aiso[iso], cspech
+    #    @infoe T, p, exp(- E1 * β), exp(- E2 * β)
+    #end
+    
     SVector{13, Float64}(
         Float64(iso),
         miso[iso],
@@ -281,6 +325,14 @@ function compute_lines_emission_and_absorption!(linedata::Vector{SVector{13, Flo
     end
 end
 
+function get_max_nf(par, λb, linedata)
+    ΔλLh = [linedata[i][8]  for i in eachindex(linedata)] .* 0.5
+    ΔλGh = [linedata[i][9]  for i in eachindex(linedata)] .* 0.5
+    Δλ   = λb[2]   - λb[1]
+    nf = floor(Int64, maximum((ΔλLh + ΔλGh)) * par.r.f_Δλ_factor / Δλ) * 2 + 10
+    nf
+end
+
 """
     sum over all lines using their line shape
 
@@ -313,6 +365,7 @@ function sum_over_lines!(par, λb, linedata, ϵbt, κbt, ϵb, κb, int_f, int_ft
     
     nthreads = Threads.nthreads()
     nf = floor(Int64, maximum((ΔλLh + ΔλGh)) * f_Δλ_factor / Δλ) * 2 + 10
+
     update_profile(pr, nf, nthreads, nλl)
     
     Threads.@threads for iλl in 1:nλl 
@@ -422,6 +475,14 @@ function get_line_data(par, molec_data_dict; renew_hdf5=false)
     line_data_dict = Dict{Symbol,LineData}()
     for spec in par.m.species
         line_data_dict[spec] = get_species_line_data(par, spec, molec_data_dict[spec]; renew_hdf5=renew_hdf5)
+    end
+    line_data_dict
+end
+
+function get_dbline_data(db, species, λmin, λmax)
+    line_data_dict = Dict{Symbol,LineData}()
+    for spec in species
+        line_data_dict[spec] = LineData(db, spec, λmin, λmax)
     end
     line_data_dict
 end

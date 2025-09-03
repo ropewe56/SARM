@@ -95,13 +95,16 @@ end
 
     n  -- number of T,Q pairs to make
     returns T, Q -- [description]
+
+    spec = "CO2"
 """
 function MolecularData(db, par, spec, atmosphere)
-    table_iso = @sprintf("%s_iso", spec)
-    df_iso = DBInterface.execute(db, "SELECT * FROM $table_iso;") |> DataFrame
+    table_Iso = @sprintf("%s_Iso", spec)
+    df_iso = DBInterface.execute(db, "SELECT * FROM $table_Iso;") |> DataFrame
+    #@infoe SQLite.columns(db, table_Iso).name
     iso_id = df_iso[!,:iso_id]
-    iso_a = df_iso[!,:aiso]
-    iso_m = df_iso[!,:misos]
+    iso_a  = df_iso[!,:aiso]
+    iso_m  = df_iso[!,:miso]
 
     table_TQ = @sprintf("%s_TQ", spec)
     TQmin, TQmax = par.m.TQmin, par.m.TQmax
@@ -149,13 +152,6 @@ function save_input_to_hdf5(hdf5_path, atmosphere::Atmosphere, molec_data_dict::
     #gj       :: Vector{Int64}
 
     datasets = Dict()
-    db_path
-    dbpath = joinpath(@__DIR__, "inputdata.db")
-    db = SQLite.DB(dbpath)
-
-    df_at = DataFrame(h_iout = atmosphere.h_iout, h = atmosphere.h, p = atmosphere.p, T = atmosphere.T, N = atmosphere.N)
-    SQLite.load!(df2, db, "hihpTN")
-
     for (spec, md) in molec_data_dict
         df = 
         datasets[String(spec)] = (
@@ -164,8 +160,7 @@ function save_input_to_hdf5(hdf5_path, atmosphere::Atmosphere, molec_data_dict::
             ("cnh"   , md.cnh), 
             ("iso_id", md.iso_id), 
             ("iso_a" , md.iso_a), 
-            ("iso_m" , md.iso_m), 
-            ("gj"    , md.gj))
+            ("iso_m" , md.iso_m))
     end
 
     save_arrays_to_hdf5(hdf5_path, datasets; fmod="w")

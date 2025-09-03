@@ -181,6 +181,7 @@ function integrate_along_path(par, result_db, λb, Iλb0, atmosphere,
         push!(tt, time_ns())
 
         # << 3
+        spec = :CO2
         for spec in par.m.species
             linedata = pa.linedata_dict[spec]                                            
             ΔλL_mean[spec] = Statistics.mean([linedata[i][8] for i in eachindex(linedata)])
