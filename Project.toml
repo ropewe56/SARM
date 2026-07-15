@@ -1,7 +1,7 @@
 name = "Sarm"
 uuid = "d2b60571-49e0-414f-add3-25d5b85b0e4f"
-authors = ["wester <rolf.wester@mailbox.org>"]
 version = "0.1.0"
+authors = ["wester <rolf.wester@mailbox.org>"]
 
 [deps]
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
@@ -20,6 +20,7 @@ PhysConst = "5fb906b7-6b74-4262-a47b-bfc7830f13d6"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
+Scanf = "6ef1bc8b-493b-44e1-8d40-549aa65c4b41"
 SimpleLog = "335c5bdd-21de-445d-a049-feb868b1bf7c"
 SpecialFileIO = "33f08be4-984f-4f9d-9dd0-18a0be18772f"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
@@ -41,5 +42,6 @@ Parameters = "0.12.3"
 Printf = "1.11.0"
 PyPlot = "2.11.6"
 SQLite = "1.6.1"
+Scanf = "0.5.4"
 StaticArrays = "1.9.13"
 StructTypes = "1.11.0"

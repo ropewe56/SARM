@@ -1,3 +1,5 @@
+## Einstein Coefficients
+
 ## $CO_2$ partial density
 $N_{iso} = N(h) \;C_{CO2} \; C_{iso}$
 

@@ -1,0 +1,14 @@
+{
+    "H2O": {
+        "hdf5_compact": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/H2O/H2O_rwfmt_compact.hdf5",
+        "hdf5": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/H2O/H2O_rwfmt.hdf5",
+        "Q": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/H2O/H2O_Q/H2O_Isotopes.txt",
+        "csv": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/H2O/H2O_rwfmt.csv"
+    },
+    "CO2": {
+        "hdf5_compact": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/CO2/CO2_rwfmt_compact.hdf5",
+        "hdf5": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/CO2/CO2_rwfmt.hdf5",
+        "Q": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/CO2/CO2_Q/CO2_Isotopes.txt",
+        "csv": "/home/wester/Projects/Julia/Climate-Energy/Sarm.jl/data/CO2/CO2_rwfmt.csv"
+    }
+}

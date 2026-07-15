@@ -11,3 +11,5 @@ Cargo.lock
 __pycache__
 *.hdf5
 Manifest.toml
+MolecularData.db
+*.out
